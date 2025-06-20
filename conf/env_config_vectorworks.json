@@ -1,0 +1,108 @@
+{
+  "env_name": "Vectorworks 2025",
+  "sub_path": "vectorworks",
+  "env_short_name": "vectorworks",
+  "env_path": "D:/SoftwareLibrary/vectorworks2025/Vectorworks2025.exe",
+  "task_description_list": [
+    {
+      "id": 1,
+      "task_description": "the easyt flloorplan pls",
+      "sub_task_description_list": []
+    }
+  ],
+  "floorplan_image_path": {
+    "floorplan": "no path"
+  },
+  "models_path": {
+    "deep_floorplan": "F:/BIM_GUI_Agent/BIM_GUI_Agent_relative_files/models/deep_floorplan/pretrained",
+    "omini": "F:/BIM_GUI_Agent/BIM_GUI_Agent_relative_files/models/omni/weights/icon_detect/model.pt",
+    "Florence2": "F:/BIM_GUI_Agent/BIM_GUI_Agent_relative_files/models/omni/weights/icon_caption_florence"
+  },
+  "panel_coordinates": {
+    "design_panel": [
+      471,
+      250,
+      979,
+      974
+    ],
+    "whole_design_panel": [
+      300,
+      238,
+      1056,
+      991
+    ],
+    "tool_panel": [
+      0,
+      215,
+      250,
+      350
+    ],
+    "current_tool": [
+      0,
+      1000,
+      300,
+      1030
+    ],
+    "object_info": [
+      1600,
+      187,
+      1920,
+      1080
+    ],
+    "whole_panel": [
+      0,
+      0,
+      1920,
+      1080
+    ]
+  },
+  "provider_configs": {
+    "coordinates_provider": {
+      "raw_coordinates": {
+        "line_type": {},
+        "max_line_id": 0,
+        "point_type": {},
+        "max_point_id": 1
+      }
+    },
+    "augment_provider": {
+      "draw_axis": true,
+      "draw_mask_panel": true,
+      "mask_panel_config": {},
+      "axis_config": {
+        "crop_region": [
+          0,
+          0,
+          1920,
+          960
+        ],
+        "axis_division": [
+          3,
+          5
+        ],
+        "axis_linewidth": 5,
+        "axis_color": "yellow",
+        "font_color": "yellow",
+        "font_size": 50,
+        "scale_length": 20
+      },
+      "draw_grid": true,
+      "grid_config": {
+        "crop_region": [
+          0,
+          0,
+          1920,
+          960
+        ],
+        "axis_division": [
+          3,
+          5
+        ],
+        "axis_linewidth": 3,
+        "axis_color": "red",
+        "font_color": "white",
+        "font_size": 50
+      }
+    }
+  }
+}

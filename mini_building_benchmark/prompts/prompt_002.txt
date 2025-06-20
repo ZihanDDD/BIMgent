@@ -1,0 +1,1 @@
+Generate a building with a regular hexagonal footprint and a single storey. Inside the building, create three rooms of roughly equal size. Each room must include doors and one window. Doors should provide access either to the outside or to a common interior space, and windows must face outward through exterior walls.

@@ -1,0 +1,2 @@
+Generate a one-storey office building with a large open workspace occupying most of the floor area. The layout should also include two enclosed meeting rooms, a manager’s office, a small pantry, and two restrooms. The main entrance should lead directly into the open office space. 
+

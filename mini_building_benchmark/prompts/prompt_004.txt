@@ -1,0 +1,1 @@
+Design a two-storey hospital building with eight distinct rooms. These must include a reception area, two consultation rooms, one minor surgery room, one waiting area, two patient rooms, and one staff room. 

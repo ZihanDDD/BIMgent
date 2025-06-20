@@ -1,0 +1,1 @@
+Make a one-floor building based on the sketch, but with updates. The building has 3 wings. In the image, there are 4 rooms. Now, add one more room to the left wing, so the building has 5 rooms total. Keep the center hallway connecting all wings.
