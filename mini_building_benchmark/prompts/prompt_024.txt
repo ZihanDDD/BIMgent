@@ -1,0 +1,2 @@
+Make a one-floor house based on the floorplan image, but with updates. Add a small office next to the kitchen and remove one of the bedroom to make more open space. 
+

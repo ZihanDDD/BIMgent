@@ -1,0 +1,1 @@
+ Create a three-storey commercial office building where each floor has the same layout. Each floor must include two large office rooms, a small meeting room, a restroom, and a central corridor. All rooms must have at least one window facing outside. The entrance to the building is located on the ground floor and leads directly to the corridor.9

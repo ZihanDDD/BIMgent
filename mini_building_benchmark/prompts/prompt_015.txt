@@ -1,0 +1,2 @@
+Make a three-floor building based on the sketch, but with updates, add a small extra room near the center.
+

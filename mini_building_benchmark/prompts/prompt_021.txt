@@ -1,0 +1,1 @@
+Make a one-floor house based on the floorplan image, but with updates. Make the storage room smaller and add a new guest room next to it. Also, add one more window in the sauna room.

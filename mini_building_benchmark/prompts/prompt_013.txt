@@ -1,0 +1,2 @@
+Make a two-floor building based on the sketch, but with updates. The building has an H-shape. In the image, each side block has 3 rooms. Now, add one extra room to both blocks, so each block has 4 rooms instead of 3. The middle part stays as a hallway that connects both sides.
+

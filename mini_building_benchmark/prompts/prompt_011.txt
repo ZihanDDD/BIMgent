@@ -1,0 +1,1 @@
+Make a one-floor building with an octagon shape based on the sketch with changes. We change 4 rooms instead of 3 rooms inside the floorplan and add an entrance at the bottom.

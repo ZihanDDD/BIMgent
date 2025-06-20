@@ -1,0 +1,2 @@
+Make a two-floor building based on the sketch, but with changes. In the image, there are rooms on top, a big room in the middle. Now, change it so the big room in the middle is split into 2 rooms. Also, move the entrance door to the center of the building.
+
