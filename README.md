@@ -18,7 +18,7 @@ the hand-drawn sketch.**
 ![Prompt Sketch](mini_building_benchmark/prompts/prompt_006.jpg)
 
 ![Process GIF](docs/BIMgent_gifs/task6process.gif)  
-![▶️ Video](docs/BIMgent_videos/Full_videos/task6.mp4)
+[▶️ Video](docs/BIMgent_videos/Full_videos/task6.mp4)
 
 ---
 
