@@ -53,21 +53,24 @@ pip install -r requirements.txt
 Please update the configuration file at `conf/env_config_vectorworks.json` before running the agent:
 
 
-1. Download Required Models
-This framework relies on models developed in other repositories. Please download them and configure the model paths accordingly in the configuration file.
+### 1. Download Required Models
 
-### Download Instructions
+This framework relies on models developed in other repositories.  
+Please download them and set the corresponding model paths in the configuration file.
 
-#### 1. DeepFloorplan Model
-- **Repository**: [DeepFloorplan](https://github.com/zlzeng/DeepFloorplan)
-- **Download**: Follow the model download instructions in the repository
+#### 🔽 Download Instructions
 
-#### 2. OmniParser Model
-- **Repository**: [OmniParser](https://github.com/microsoft/OmniParser)
-- **Download**: Follow the model download instructions in the repository
+##### 📦 DeepFloorplan Model
+- **Repository**: [DeepFloorplan](https://github.com/zlzeng/DeepFloorplan)  
+- **Instructions**: Follow the model download guide provided in the repository
+
+##### 📦 OmniParser Model
+- **Repository**: [OmniParser](https://github.com/microsoft/OmniParser)  
+- **Instructions**: Follow the model download guide provided in the repository
 
 
-2. Update `panel_coordinates` to match your tool panel, design panel and object info panel layout.  
+
+### 2. Update `panel_coordinates` to match your tool panel, design panel and object info panel layout.  
    The format is `[x1, y1, x2, y2]` where:
    - `x1, y1` = top-left corner  
    - `x2, y2` = bottom-right corner
