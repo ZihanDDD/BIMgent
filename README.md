@@ -12,26 +12,18 @@ Overview of the BIMgent framework.
 
 ## 🎥 Videos
 
-**Generate a one-storey office building with a large open workspace  
-occupying most of the floor area. The layout should also include two  
-enclosed meeting rooms, a manager’s office, a small pantry, and two  
-restrooms.**  
-[▶️ Video](docs/BIMgent_videos/Full_videos/task1.mp4)
-
----
-
 **Generate a one-storey octagonal building based on  
-the hand-drawn sketch.**  
-*mini_building_benchmark/prompts/prompt_006.jpg*  
+the hand-drawn sketch.**
+
+![Prompt Sketch](mini_building_benchmark/prompts/prompt_006.jpg)
+
+[▶️ GIF](docs/BIMgent_gifs/Full_videos/task6process.gif)  
 [▶️ Video](docs/BIMgent_videos/Full_videos/task6.mp4)
 
 ---
 
-**Generate a building model based on a hand-drawn  
-octagon floorplan, modifying the interior layout to include  
-four rooms instead of three.**  
-*mini_building_benchmark/prompts/prompt_006.jpg*  
-[▶️ Video](docs/BIMgent_videos/Full_videos/task16.mp4)
+More detailed videos can be found on the website:  
+🔗 [https://tumcms.github.io/BIMgent.github.io/](https://tumcms.github.io/BIMgent.github.io/)
 
 
 
