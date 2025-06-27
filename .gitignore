@@ -84,5 +84,4 @@ wheels/
 *.egg 
 
 .DS_Store
-docs/
 BIMgent_env/
