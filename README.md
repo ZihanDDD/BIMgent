@@ -3,17 +3,17 @@
 🔗 **Website**: [https://tumcms.github.io/BIMgent.github.io/](https://tumcms.github.io/BIMgent.github.io/)  
 📄 **Paper on arXiv**: [arXiv:2506.07217](https://arxiv.org/abs/2506.07217)
 
-![Workflow Diagram](docs/BIMgent_images/general_workflow1.png)
+![Workflow Diagram](docs/general_workflow1.png)
 
 **BIMgent** is a novel agentic framework that enables architectural building modeling process to be performed autonomously through computer control.
 
-![Workflow Diagram](docs/BIMgent_images/detail_workflow.png)
+![Workflow Diagram](docs/detail_workflow.png)
 
 ## 🎥 Demo
 
 **Generate a one-storey octagonal building based on the hand-drawn sketch.**
 
-![Process GIF](task6.gif)  
+![Process GIF](docs/task6.gif)  
 
 
 More detailed demo videos can be found on project website:  
