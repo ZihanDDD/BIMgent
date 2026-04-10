@@ -1,1 +1,0 @@
-Based on the provided hand-drawn floorplan, make a three-floor building.

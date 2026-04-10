@@ -25,6 +25,14 @@ Each slab supports **components** (concrete, insulation, finish, etc.), drainage
 
 In the **Tool bar**: pick a **Slab Style** or click **Preferences…** to set thickness, components, and default top/bottom bounds. :contentReference[oaicite:1]{index=1}
 
+IF the slab belongs to the second floor (or any upper floor), perform the following additional operations after the slab is created:
+
+1. Select the Clip tool (shortcut: Shift + N).
+
+2. Using the stair position provided in the floorplan, click two corner points — the top-left and bottom-right — to create an opening for the stairs.
+
+3. The clip bounding box should be using the stair bounding box. 
+   - you should click at thos two bounding box points to define the stair opening area.
 ---
 
 ### 2.1 Workflows
@@ -35,6 +43,16 @@ In the **Tool bar**: pick a **Slab Style** or click **Preferences…** to set th
 2. If Picked Walls: every external wall need to be clicked, each wall only need to be **clicked ONCE** (order doesn’t matter) and press **Enter**.  
    If Inner Boundary: click once inside the room outline.  
 3. Slab is created and *associated* to those walls; moving a wall reshapes the slab. :contentReference[oaicite:3]{index=3}
+
+IF the slab belongs to the second floor (or any upper floor), perform the following additional operations after the slab is created:
+
+1. Select the Clip tool (shortcut: Shift + N).
+
+2. Using the stair position provided in the floorplan, click two corner points — the top-left and bottom-right — to create an opening for the stairs.
+
+3. The clip bounding box should be using the stair bounding box. 
+
+   - you should click at thos two bounding box points to define the stair opening area.
 
 ---
 

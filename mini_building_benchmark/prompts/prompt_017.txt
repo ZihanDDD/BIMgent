@@ -1,1 +1,0 @@
-Make a Three-floor house based on the floorplan image.

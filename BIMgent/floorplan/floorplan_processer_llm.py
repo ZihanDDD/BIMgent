@@ -88,7 +88,8 @@ def map_floorplan_to_new_bbox(floorplan_data, original_resolution, new_bbox):
             
             mapped_wall_str = f"{wall_name}: ({start_mapped[0]:.1f}, {start_mapped[1]:.1f}) to ({end_mapped[0]:.1f}, {end_mapped[1]:.1f})"
             mapped_floorplan["external_wall_position"].append(mapped_wall_str)
-    # Map windows
+    
+    # Map slabs
     mapped_floorplan["slab_position"] = []
     for slab_pos in floorplan_data["slab_position"]:
         mapped_slab = map_coordinates(slab_pos, original_resolution, new_bbox)
@@ -117,7 +118,19 @@ def map_floorplan_to_new_bbox(floorplan_data, original_resolution, new_bbox):
     for window_pos in floorplan_data["windows_position"]:
         mapped_window = map_coordinates(window_pos, original_resolution, new_bbox)
         mapped_floorplan["windows_position"].append([round(mapped_window[0], 1), round(mapped_window[1], 1)])
-        
 
+    # Map stair bounding box (two corner points)
+    mapped_floorplan["stair_boundingbox"] = []
+    if "stair_boundingbox" in floorplan_data:
+        for stair_bbox_point in floorplan_data["stair_boundingbox"]:
+            mapped_bbox_point = map_coordinates(stair_bbox_point, original_resolution, new_bbox)
+            mapped_floorplan["stair_boundingbox"].append([round(mapped_bbox_point[0], 1), round(mapped_bbox_point[1], 1)])
+    
+    # Map stair start point
+    mapped_floorplan["stair_start_point"] = []
+    if "stair_start_point" in floorplan_data:
+        for stair_start in floorplan_data["stair_start_point"]:
+            mapped_start = map_coordinates(stair_start, original_resolution, new_bbox)
+            mapped_floorplan["stair_start_point"].append([round(mapped_start[0], 1), round(mapped_start[1], 1)])
     
     return mapped_floorplan

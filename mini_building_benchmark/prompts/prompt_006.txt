@@ -1,1 +1,0 @@
-Based on the provided hand-drawn floorplan image, generate a one-storey building model. The building has an octagonal outer footprint with three interior rooms. 

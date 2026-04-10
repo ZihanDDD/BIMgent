@@ -50,7 +50,7 @@ def ingest_documents(
 
     Calling this repeatedly will *append* only NEW docs if the DB already exists.
     """
-    
+
     load_dotenv()
     api_key = os.getenv("OA_OPENAI_KEY")
     if not api_key:
@@ -74,7 +74,7 @@ def ingest_documents(
     # Flush any leftover docs < batch_size
     if current_batch:
         db.add_documents(current_batch)
-    
+
     # No need to call persist() - Chroma automatically persists documents now
     print(f"Ingested {len(docs)} documents into '{persist_dir}'.")
     return db
@@ -103,7 +103,7 @@ def query_builder(query):
         raise ValueError("Environment variable OA_OPENAI_KEY not set.")
 
     # ---------------------------------------------------------------------
-    # Step 1: Ensure the vector DB exists (auto‑ingest on first run)
+    # Step 1: Ensure the vector DB exists (auto-ingest on first run)
     # ---------------------------------------------------------------------
     try:
         db = load_vectorstore(api_key)
@@ -116,12 +116,12 @@ def query_builder(query):
     # ---------------------------------------------------------------------
     retriever = db.as_retriever(search_kwargs={"k": 1})
     docs = retriever.invoke(query)
-    
+
     # example: just want the plain text
     docs_str = "\n\n".join(d.page_content for d in docs)
 
     if not docs:
         print("No documents matched the query.")
-        
-    
+
+
     return docs_str

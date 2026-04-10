@@ -1,87 +1,33 @@
-# Python
+venv/
+.venv/
+env/
+ENV/
+bim_agent_env/
+
 __pycache__/
 *.py[cod]
 *$py.class
-*.so
-.Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
 
-# Virtual Environment
-venv/
-env/
-ENV/
-.env
-.venv
-env.bak/
-venv.bak/
-
-# IDE
-.idea/
 .vscode/
-*.swp
-*.swo
-.DS_Store
+.idea/
 
-# Testing
-.coverage
-htmlcov/
-.pytest_cache/
-.tox/
-.nox/
-coverage.xml
-*.cover
-.hypothesis/
+.ipynb_checkpoints/
 
-# Logs
 *.log
-logs/
-log/
+*.tmp
+*.bak
 
-# Local development settings
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-
-# Database
-*.sqlite3
-*.db
-
-# Uploads directory (except .gitkeep)
-app/uploads/*
-!app/uploads/.gitkeep
-
-# Distribution / packaging
-.Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-*.egg-info/
-.installed.cfg
-*.egg 
+*.h5
+*.hdf5
+*.ckpt
+*.pth
+*.pt
+*.pb
+*.onnx
 
 .DS_Store
-BIMgent_env/
+Thumbs.db
+
+Pipfile.lock
+poetry.lock
+

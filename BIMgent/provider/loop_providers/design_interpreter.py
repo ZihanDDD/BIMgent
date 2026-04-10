@@ -1,42 +1,28 @@
 from copy import deepcopy
 import re
 import os
-from PIL import Image
-from io import BytesIO
-from typing import Dict, Any, List
-from conf.config import Config
+import ast
 import json
-import PIL.Image
-from dotenv import load_dotenv
-import base64
-import httpx
-from openai import OpenAI
+import time
+from conf.config import Config
+from PIL import Image
+from string import Template
 import matplotlib.pyplot as plt
-import matplotlib.image as mpimg
+from bim_gui_agent.floorplan.floorplan_processer_llm import map_floorplan_to_new_bbox
+from bim_gui_agent.memory.local_memory import LocalMemory
+from bim_gui_agent.utils.dict_utils import kget
+from bim_gui_agent.provider.loop_providers.llm_provider import LLMProvider
 
-from google import genai
-from google.genai import types
-
-
-from abc import ABC, abstractclassmethod
-
-from BIMgent.provider.loop_providers.template_processor import extract_keys_from_template, check_input_keys, check_output_keys, assemble_prompt, parse_semi_formatted_text
-from BIMgent.memory.local_memory import LocalMemory
-from BIMgent.floorplan.floorplan_processer_llm import map_floorplan_to_new_bbox
-
-from BIMgent.utils.dict_utils import kget
-
-
-# If you still need Config as a global, leave this line:
 config = Config()
 memory = LocalMemory()
-load_dotenv()
 
 design_panel =  kget(config.env_config, "panel_coordinates", default='')['design_panel']
 
 
 
 # Coordinates of the design bounding box
+# Detail number could be configured in configuration file. conf/env_config_vectorworks.json.
+#@TODO after the refinement of the Design part lets see if it could be automatic.
 bounding_box = {
     "top_left": ( design_panel[0],  design_panel[1]),
     "bottom_left": (design_panel[0], design_panel[3]),
@@ -44,10 +30,11 @@ bounding_box = {
     "top_right": (design_panel[2], design_panel[1]),
 }
 
-import json
-import re
 
-@staticmethod
+###----------------------------
+# Staticmethod for the floorplan informaiton extraction 
+###----------------------------
+
 def extract_floorplan_json(text):
     """
     Extract and parse the floorplan room data.
@@ -113,200 +100,147 @@ def extract_floorplan_json(text):
 
 
 
-class DesignInterpreterProvider():
-    """
-    The designer provider for the design of the floorplan and the other structures that should be on the design for instance the door, windows using llms etc.
-    """
-    def __init__(
-        self,
-        task_description: str,
-        llm_provider,
-        **kwargs,
-    ):
-        self.task_description = task_description
-        self.llm_provider = llm_provider
-
-        # Load and parse the template file once during initialization
-    def __call__(self,image_path, *args, **kwargs) -> str:
-        
-
-        # Deep copy memory to avoid unintended side effects
-        params = deepcopy(memory.working_area)
-        response = {}
-
-        # There are different parameters which been required in the template by <>, extract them and check
-        templete, inputkey, outputkey = extract_keys_from_template(config.provider_configs['design_interpreter']['template_path'])
-    
-        check_input_keys(params, inputkey)
-
-        # Assemble prompt, encode images for the input of llms
-        message_prompts = self.llm_provider.assemble_prompt(template_str=templete, params=params)
-        image = PIL.Image.open(image_path)
-        
-
-
-        try:
-            message = [message_prompts[0], image]
-            response = self.llm_provider.create_completion(message)
-
-        except Exception as e:
-            print(f"Response is not in the correct format: {e}, retrying...")
-                
-        
-        response = response.text
-        
-        response = parse_semi_formatted_text(response)
-        
-        check_output_keys(response, outputkey)
-
-        del params
-
-        return response
-
-
-
-class DesignInterpreterPostprocessingProvider():
-    def __init__(self):
-        pass
-
-
-    def __call__(self, response):
-    
-        # Floorplan
-
-        floorplan = response
-        resolution = (512,512)
-        
-        floorplan = floorplan.strip()
-        # If the string starts and ends with '{' and '}', remove them
-        if floorplan.startswith("{") and floorplan.endswith("}"):
-            # Remove the first and last character (the extra braces)
-            inner = floorplan[1:-1].strip()
-            # If the remaining string starts with '{', assume it is a list of dictionariesz``
-            if inner.startswith("{"):
-                floorplan = f"[{inner}]"
-                
-        floorplan_data = json.loads(floorplan)[0]
-        
-        mapped_floorplan = map_floorplan_to_new_bbox(floorplan_data, resolution, bounding_box)
-        
-        print(mapped_floorplan)
-                
-        new_param = {'floorplan_metadata': mapped_floorplan}
-    
-        memory.update_info_history(new_param)
-        
-        del new_param
-                
-        return mapped_floorplan
-    
-    
-
-
 class DesignInterpreterGeminiProvider():
-    
-    def __init__(
-        self,
-        task_description: str
-    ):
-        self.task_description = task_description
-        self.api_key = os.getenv('Gemini_KET')
-        
-    def encode_image_to_base64(self, image_path: str) -> str:
-        """Encodes an image to a base64 string."""
-        try:
-            with open(image_path, "rb") as image_file:
-                return base64.b64encode(image_file.read()).decode("utf-8")
-        except FileNotFoundError:
-            print(f"Error: File not found - {image_path}")
-            return ""
-        except Exception as e:
-            print(f"Error: {e}")
-            return ""
 
-        # Load and parse the template file once during initialization
-    def __call__(self, walls_coord, openings_coord,  *args, **kwargs) -> str:
-        
-        
+    def __init__(self, task_description: str):
+        self.task_description = task_description
+        self.llm = LLMProvider()
+
+    def __call__(self, walls_coord, openings_coord, *args, **kwargs) -> str:
+
         param = deepcopy(memory.working_area)
-        response = {}
-        # floorplan_meta_infor = memory.get_recent_history('floorplan')
         image_path = param.get('floorplan_path')
         seg_image_path = param.get('cleaned_floorplan_path')
-        
-        
-        pil_image1 = PIL.Image.open(image_path)
-        pil_image2 = PIL.Image.open(seg_image_path)
 
-        # walls_coord = memory.get_recent_history('walls')
-        # openings_coord = memory.get_recent_history('openings')
+        image_part1 = LLMProvider.read_image(image_path)
+        image_part2 = LLMProvider.read_image(seg_image_path)
 
-        
-        # Initialize Anthropic client
-        client = genai.Client(api_key=self.api_key)
-        
-        prompt = f"""You are a skilled interpreter of architectural floorplans.
-        You are provided with two images representing the same floorplan:
-        1. **Original Floorplan Image** : A clean architectural drawing.
-        2. **Segmented Floorplan Image** : Displays the same layout with labeled wall names and index annotations placed at the approximate center of each wall.
+        with open("res/vectorworks/prompts/design_interpreter.prompt", "r", encoding="utf-8") as f:
+            prompt_text = f.read()
 
-        Additionally, you are given:
-        - **`{walls_coord}`** and  **`{openings_coord}`** : floorplan metadata information which includes A list of wall names and their corresponding coordinates.A list of opening coordinates (not yet labeled as doors or windows).
-        
-        
-        floorplan:
-        The metadata information and image 2 are basically correct, and you don't need to make major changes to the current layout, such as moving a point too long. You only need to make small changes to walls and openings where necessary, according to the float rules:
-        1. Use Image 1 (original floorplan) as the baseline reference. Image 2 is mostly correct — only refine walls and openings where necessary.
-        2. Remove noise or structural errors, including:
-            - Short isolated walls whose endpoints do not connect to any other wall and are far from other walls.    
-        3. Ensure wall connectivity by adjusting coordinates:
-            - Extend or trim walls along their original direction to restore intersections observed in Image 1.
-            - If a wall is isolated (i.e., disconnected at both endpoints) but is very close to another wall, snap its endpoints to the nearest neighboring wall without changing its orientation (only adjust length, not angle).
-        4. Ensure that the final metadata is visually and structurally consistent with Image 1, accurately representing the floorplan. If confirmed as a duplicate detection, delete the extra instance.
-        5. Classify Openings, Use the original floorplan image and the provided opening coordinates to determine whether each opening is a door or a window. Update their labels accordingly. Refer to Image 1 to check if 2 opening position represent the same physical opening. If yes delete it.
-        6. Classify Walls, Using the **wall coordinates** and the **segmented image** (which shows wall names at their approximate positions), classify each wall as:
-            - **External Wall**: Forms the continuous outer boundary of the floorplan. The boundary **must be closed** (i.e., walls form a sealed perimeter).
-            - **Internal Wall**: All walls that are not part of the external boundary.
-            - Wall names must remain unchanged.
-        7. Order Components. When listing the components (walls, openings, etc.), always start from the top-left of the floorplan and continue in a clockwise direction.
-        8. Define Slab Midpoints. For all final external walls, calculate the midpoint of each wall segment using its coordinates [[x1, y1], [x2, y2]]. Return a list of all such midpoints, which define the slab.       
-        You must respond ONLY with the requested format and no explanatory text. No additional text. You are not allowed to add extra stuff like ```json and ``` for the start and end of the floorplan response:
-        floorplan: 
-            [
-                {{
-                    "external_wall_position": [
-                        "Wall1: (x1, y1) to (x2, y2)",
-                        "Wall2: (x3, y3) to (x4, y4)"
-                    ],
-                    "internal_wall_position": [
-                        "Wall1: (x1, y1) to (x2, y2)",
-                        "Wall2: (x3, y3) to (x4, y4)"
-                    ],
-                    "slab_position": [[x7, y7], [x8, y8], ...],
-                    "doors_position": [[x5, y5]],
-                    "windows_position": [[x6, y6]]
-                }}
-            ]
-        """
-        
-        model = "gemini-2.5-pro-preview-05-06"
+        prompt = Template(prompt_text).substitute(walls_coord=walls_coord)
 
+        response_text = self.llm.call(
+            LLMProvider.MODEL_UNDERSTANDING,
+            [prompt, image_part1, image_part2],
+            thinking_budget=8192,
+            max_output_tokens=4096,
+        )
 
-        response = client.models.generate_content(
-            model="gemini-2.5-pro-preview-05-06",
-            contents=[prompt,
-                    pil_image1, pil_image2])
-        
-        # Extract the response text
-        response_text = response.text
         response = extract_floorplan_json(response_text)
-        print("\n")
-        print(f"Respond recived from {model}")
-        
+
         floorplan = json.loads(response)
-        
-    
-        
+
+        # Fallback: if the LLM failed to return a usable floorplan structure,
+        # build one from the raw wall list so downstream stages still work.
+        if not floorplan:
+            if isinstance(walls_coord, str):
+                try:
+                    wall_list = ast.literal_eval(walls_coord)
+                except (ValueError, SyntaxError):
+                    wall_list = []
+            else:
+                wall_list = list(walls_coord)
+            print("Design interpreter LLM returned empty; using raw walls as fallback.")
+            floorplan = [{
+                "external_wall_position": wall_list,
+                "internal_wall_position": [],
+                "slab_position": [],
+                "stair_boundingbox": [],
+                "stair_start_point": [],
+                "windows_position": [],
+                "doors_position": [],
+            }]
+
+        # opening coordinates
+        if isinstance(openings_coord, str):
+            openings_coord = ast.literal_eval(openings_coord)
+
+        window = []
+        door = []
+
+
+        # Open the base image once
+        base_img = Image.open(image_path)
+        W, H = base_img.size
+
+
+        # Original coordinate space
+        COORD_WIDTH = 512
+        COORD_HEIGHT = 512
+
+        # Crop size in the target image space
+        crop_size = 100  # 100x100 pixel crop in the actual image
+
+        i = 0
+        for (x, y) in openings_coord:
+            
+            # Map coordinates from 512x512 space to actual image space
+            actual_x = (x / COORD_WIDTH) * W
+            actual_y = (y / COORD_HEIGHT) * H
+            
+            # Half of the crop size
+            r = crop_size / 2
+            
+            # Compute a valid PIL crop box = (left, top, right, bottom)
+            left   = max(0, int(actual_x - r))
+            top    = max(0, int(actual_y - r))
+            right  = min(W, int(actual_x + r))
+            bottom = min(H, int(actual_y + r))
+            
+            # Skip degenerate boxes
+            if right <= left or bottom <= top:
+                print(f"Skip invalid box at ({x}, {y}) -> mapped to ({actual_x}, {actual_y}) -> {(left, top, right, bottom)}")
+                continue
+            
+            # Crop the opening patch
+            opening_patch = base_img.crop((left, top, right, bottom))
+            
+            opening_dir = os.path.join(config.work_dir, "openings")
+            os.makedirs(opening_dir, exist_ok=True)
+            
+            opening_name = os.path.join(opening_dir, f"opening_{i}.png")
+            opening_patch.save(opening_name)
+
+            opening_part = LLMProvider.read_image(opening_name)
+
+            prompt_opening = (
+            """
+            Classify the building opening in this architectural floor plan image patch. Ignore any english words on it.
+
+            - **Door**: Has a curved arc line (door swing symbol) extending from the opening. If there is a hole on the stright line, it's door too.
+            - **Window**: Only straight lines with no hole, no arc.
+
+            Return only: 'door' or 'window'
+            """
+            )
+
+            pred_text = self.llm.call(
+                LLMProvider.MODEL_UNDERSTANDING,
+                [prompt_opening, opening_part],
+                thinking_budget=1024,
+                max_output_tokens=256,
+            )
+
+            pred = pred_text.strip().lower()
+
+            i = i + 1
+
+            x = int(x)
+            y = int(y)
+
+            if "door" in pred and "window" not in pred:
+                door.append([x, y])
+            elif "window" in pred and "door" not in pred:
+                window.append([x, y])
+            else:
+                door.append([x, y])
+
+
+        # Save results
+        floorplan[0]['windows_position'] = window
+        floorplan[0]['doors_position'] = door
+
         # === Plot ===
         plt.figure(figsize=(6, 6))
         for item in floorplan:
@@ -316,7 +250,9 @@ class DesignInterpreterGeminiProvider():
             
             doors = item.get("doors_position", [])
             windows = item.get("windows_position", [])
-            openings = doors + windows 
+            
+            stair_boundingbox = item.get("stair_boundingbox", [])
+            stair_start_point = item.get("stair_start_point", [])
                         
             # Plot each wall
             for wall_str in walls:
@@ -329,13 +265,54 @@ class DesignInterpreterGeminiProvider():
                 plt.text(mid_x, mid_y, self.get_wall_id(wall_str), color='blue', fontsize=10, 
                         ha='center', va='center')
             
-            # Plot openings if provided
-            for op in openings:
-                plt.plot(op[0], op[1], 'ro', markersize=6)
+            # Plot doors (blue points)
+            for door in doors:
+                plt.plot(door[0], door[1], 'bo', markersize=6, label='Door' if doors.index(door) == 0 else '')
+            
+            # Plot windows (red points)
+            for window in windows:
+                plt.plot(window[0], window[1], 'ro', markersize=6, label='Window' if windows.index(window) == 0 else '')
+            
+            # Plot stair bounding box if provided
+            if len(stair_boundingbox) == 2:
+                # stair_boundingbox contains two corner points: [[x1, y1], [x2, y2]]
+                corner1 = stair_boundingbox[0]
+                corner2 = stair_boundingbox[1]
+                
+                # Calculate all four corners of the rectangle
+                x_min = min(corner1[0], corner2[0])
+                x_max = max(corner1[0], corner2[0])
+                y_min = min(corner1[1], corner2[1])
+                y_max = max(corner1[1], corner2[1])
+                
+                # Draw the rectangle
+                rect_x = [x_min, x_max, x_max, x_min, x_min]
+                rect_y = [y_min, y_min, y_max, y_max, y_min]
+                plt.plot(rect_x, rect_y, 'g-', linewidth=2, label='Stair Bounding Box')
+                
+                # Optionally fill the rectangle with semi-transparent color
+                plt.fill(rect_x, rect_y, color='green', alpha=0.2)
+                
+                # Add label at the center of the bounding box
+                center_x = (x_min + x_max) / 2
+                center_y = (y_min + y_max) / 2
+                plt.text(center_x, center_y, 'STAIR', color='green', fontsize=12, 
+                        ha='center', va='center', fontweight='bold')
+            
+            # Plot stair start point (yellow points)
+            for start_pt in stair_start_point:
+                plt.plot(start_pt[0], start_pt[1], 'yo', markersize=8, 
+                        label='Stair Start' if stair_start_point.index(start_pt) == 0 else '',
+                        markeredgecolor='orange', markeredgewidth=1.5)
 
         plt.axis('equal')
         plt.grid(False)
         plt.gca().invert_yaxis()
+        
+        # Remove duplicate labels in legend
+        handles, labels = plt.gca().get_legend_handles_labels()
+        by_label = dict(zip(labels, handles))
+        plt.legend(by_label.values(), by_label.keys(), loc='upper right')
 
         # === Save ===
         screenshot_name = "postprocessed_floorplan_visualization.png"
@@ -348,12 +325,12 @@ class DesignInterpreterGeminiProvider():
         }
         memory.update_info_history(floorplan_para)
 
-        # === Show for 3 s, then close ===
-        plt.show(block=False)   # display without blocking the rest of the script
-        plt.pause(3)            # keep it up for ~3 seconds
-        plt.close()             # close the figure window
+        # Show the visualization briefly, then close it.
+        plt.show(block=False)
+        plt.pause(3)
+        plt.close()
 
-        return response
+        return floorplan
     
         # === Helpers ===
     def parse_coordinate_string(self, wall_str):
@@ -370,3 +347,42 @@ class DesignInterpreterGeminiProvider():
         match = re.match(r'(\w+):', wall_str.strip())
         return match.group(1) if match else "Wall"
         
+
+
+#Postprocessing
+#--------function: map the generated coordinates of the floorplan to the GUI position.
+
+class DesignInterpreterPostprocessingProvider():
+    def __init__(self):
+        pass
+
+
+    def __call__(self, response):
+
+        floorplan = response
+        resolution = (512, 512)
+        floorplan_data = floorplan
+
+
+
+        if isinstance(floorplan_data, str):
+            # Parse the string representation of a Python list/dict
+            floorplan_data = json.loads(floorplan_data)
+
+        # Upstream returns the floorplan wrapped in a one-element list
+        # (``[{...}]``); ``map_floorplan_to_new_bbox`` expects a plain dict.
+        if isinstance(floorplan_data, list):
+            if not floorplan_data:
+                raise ValueError("design_interpreter produced an empty floorplan list")
+            floorplan_data = floorplan_data[0]
+
+        mapped_floorplan = map_floorplan_to_new_bbox(floorplan_data, resolution, bounding_box)
+
+        new_param = {'floorplan_metadata': mapped_floorplan}
+    
+        memory.update_info_history(new_param)
+        
+        del new_param
+                
+        return mapped_floorplan
+

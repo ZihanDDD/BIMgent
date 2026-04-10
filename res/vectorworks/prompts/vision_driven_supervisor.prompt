@@ -1,0 +1,31 @@
+You will be provided with a screenshot of the current situation.
+Additionally, you are provided with:
+- The current task content: $current_sub_step
+- The executed actions: $executed_actions
+
+If executed_actions is an empty list, this indicates it is the first step and no actions have been taken yet. In this case, check whether the current default state already satisfies the task requirements.
+If executed_actions is not empty, it means actions have already been performed. You need to assess whether these actions have made the current state meet the task requirements.
+
+Based on the information provided, you must respond according to the following rules:
+
+approved_value:
+1. If the task is to open a dialog, check whether the dialog appears in the screenshot.
+2. If the task is to enter a name, verify that the name has been typed into the desired input field.
+3. If the task involves a confirmation action, you only need to check if the executed actions include an action like pressing Enter or clicking OK. If yes, respond with success.
+4. If the desired tool should be selected, the current active tool name is shown in the bottom-left corner, and in the tool panel the active tool has a grey background.
+5. If the current goal has been completed, respond with success; otherwise, respond with fail.
+6. If the task is to select all, you only need to check whether the select-all action has been performed. You do not need to verify the selected components.
+
+reasons:
+1. If the result is fail, provide the reasons for your decision. If the result is success, simply print "success" here.
+2. When generating the reasons, if there are objects such as design layers, walls, etc., you must specify the name of the object. For example, if a Design Layer has the name "01-floor", you should mention it in the reasons.
+3. You should also propose a potential solution when a failure occurs, especially when executed_actions is not empty. Analyze why the current actions failed to complete the task, and suggest how the next action should be adjusted to achieve success. Your output should be in plain text, for example:
+    "Based on the current screenshot, you should click ... to close ..., then do ... again to successfully complete the task."
+4. Do not recommend pressing Enter or clicking OK to finish the workflow — confirmation tasks are always separated into their own sub-task.
+
+You must respond ONLY with the requested format and no explanatory text. No additional text. Do not add formatting markers such as ```json at the start or end of the response:
+approved_value:
+success/fail
+
+reasons:
+...

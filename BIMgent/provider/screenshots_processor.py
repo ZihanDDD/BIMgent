@@ -128,7 +128,8 @@ class ScreenshotsProcessor:
         before = cv2.imread(prev_img_path)
         after  = cv2.imread(curr_img_path)
         if before is None or after is None:
-            raise FileNotFoundError("Could not read one of the screenshots.")
+            print("Could not read one of the screenshots.")
+            return 0, 0, 1920, 1080
 
         # -- build a binary mask of all changed pixels ----------------------------
         gray_before = cv2.cvtColor(before, cv2.COLOR_BGR2GRAY)

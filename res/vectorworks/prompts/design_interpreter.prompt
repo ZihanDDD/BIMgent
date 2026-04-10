@@ -1,0 +1,55 @@
+You are a skilled interpreter of architectural floorplans.
+        You are provided with two images representing the same floorplan:
+        1. Original Floorplan Image : A clean architectural drawing.
+        2. Segmented Floorplan Image : Displays the same layout with labeled wall names and index annotations placed at the approximate center of each wall.
+
+        Additionally, you are given:
+        - $walls_coord : floorplan metadata information which includes A list of wall names and their corresponding coordinates. A list of opening coordinates (not yet labeled as doors or windows).
+    
+
+
+floorplan: Use Floorplan Image as the baseline reference. 
+
+1. Use Image 1 (original floorplan) as the baseline reference. Image 2 is mostly correct — only refine walls and openings where necessary.
+2. Remove noise or structural errors, including:
+    - Short isolated walls whose endpoints do not connect to any other wall and are far from other walls.    
+3. Ensure wall connectivity by adjusting coordinates:
+    - Extend or trim walls along their original direction to restore intersections observed in Image 1.
+    - If a wall is isolated (i.e., disconnected at both endpoints) but is very close to another wall, snap its endpoints to the nearest neighboring wall without changing its orientation (only adjust length, not angle).
+4. Ensure that the final metadata is visually and structurally consistent with Image 1, accurately representing the floorplan. If confirmed as a duplicate detection, delete the extra instance.
+6. Classify Walls, Using the **wall coordinates** and the **segmented image** (which shows wall names at their approximate positions), classify each wall as:
+    - **External Wall**: Forms the continuous outer boundary of the floorplan. The boundary **must be closed** (i.e., walls form a sealed perimeter).
+    - **Internal Wall**: All walls that are not part of the external boundary.
+    - Wall names must remain unchanged.
+7. Order Components. When listing the components (walls, openings, etc.), always start from the top-left of the floorplan and continue in a clockwise direction.
+8. Define Slab Midpoints. For all final external walls, calculate the midpoint of each wall segment using its coordinates [[x1, y1], [x2, y2]]. Return a list of all such midpoints, which define the slab.       
+9. If there are stair in image 1, you need to based on image 1 to define the position of the stair.
+    - Constraints on the stair rectangle:
+        – width  = 50 units  
+        – height = 118 units  
+        – orientation vertical (height extends top↓down)  
+
+    - Coordinate conventions:
+        – Use the same coordinate system as in the floorplan metadata (512*512)
+        – Coordinates must be integers
+If not you just directly generate the empty list in the stair metadata.
+10. The output resolution is 512*512, the metadata should be EXACTLY align with the image 1 (original floorplan). 
+
+
+You must respond ONLY with the requested format and no explanatory text. No additional text. You are not allowed to add extra stuff like ```json and ``` for the start and end of the floorplan response:
+floorplan: 
+    [
+        {
+            "external_wall_position": [
+                "Wall1: (x1, y1) to (x2, y2)",
+                "Wall2: (x3, y3) to (x4, y4)"
+            ],
+            "internal_wall_position": [
+                "Wall1: (x1, y1) to (x2, y2)",
+                "Wall2: (x3, y3) to (x4, y4)"
+            ],
+            "slab_position": [[x7, y7], [x8, y8], ...],
+            "stair_boundingbox": [[x9, y9],[x10, y10]]
+            "stair_start_point": [[x11, y11]]
+        }
+    ]

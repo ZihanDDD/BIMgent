@@ -8,9 +8,9 @@ from typing import (
 import os
 
 from conf.config import Config
-from BIMgent.memory.base import BaseMemory, Image
-from BIMgent.utils.json_utils import load_json, save_json
-from BIMgent.utils.singleton import Singleton
+from bim_gui_agent.memory.base import BaseMemory, Image
+from bim_gui_agent.utils.json_utils import load_json, save_json
+from bim_gui_agent.utils.singleton import Singleton
 
 config = Config()
 
@@ -128,3 +128,28 @@ class LocalMemory(BaseMemory, metaclass=Singleton):
         else:
             save_json(file_path=os.path.join(self.memory_path, self.storage_filename), json_dict=self.recent_history,
                       indent=4)
+
+    def clear(self) -> None:
+        """Clear all memory state for a fresh run."""
+        self.memory_path = config.work_dir
+        self.working_area = {}
+        self.recent_history = {
+            "image": [],
+            "augmented_image": [],
+            "action": [],
+            "action_error": [],
+            "decision_making_reasoning": [],
+            "success_detection_reasoning": [],
+            "self_reflection_reasoning": [],
+            "image_description": [],
+            "task_guidance": [],
+            "dialogue": [],
+            "task_description": [],
+            "skill_library": [],
+            "summarization": ["The user is using the target application on the PC."],
+            "last_task_guidence": [],
+            "long_horizon_task": [],
+            "": [self.task_duration],
+            "key_reason_for_last_action": [],
+            "success_detection": [],
+        }

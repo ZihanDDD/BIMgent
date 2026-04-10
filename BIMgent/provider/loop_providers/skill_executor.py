@@ -1,31 +1,51 @@
-from BIMgent.provider.ui_controller import  MouseController
+from bim_gui_agent.provider.ui_controller import  MouseController
 import re
+from collections.abc import Iterable
 
-def execute_actions(actions: list, controller: MouseController):
+def flatten_actions(actions):
+    """Recursively flattens arbitrarily nested lists of actions."""
+    for item in actions:
+        if isinstance(item, Iterable) and not isinstance(item, (str, bytes)):
+            yield from flatten_actions(item)
+        else:
+            yield item
+
+
+def execute_actions(actions, controller):
     """
     Executes a sequence of actions on the given controller.
 
-    :param actions: List of action strings to execute.
+    :param actions: List (possibly nested) of action strings to execute.
     :param controller: An instance of MouseController.
     """
-    for action in actions:
+    flat_actions = list(flatten_actions(actions))  # Flatten any shape of [[[]]]
+    
+    for action in flat_actions:
         try:
-            #print(f"Executing action: {action}")
-            # Use regex to match method calls with optional parameters
+            # Match function calls like move(x=10, y=20) or click(100, 200)
             matches = re.findall(r"(\w+)\(([^)]*)\)", action)
+            
             for method_name, param_str in matches:
-                # Parse parameters into positional and keyword arguments
                 args = []
                 kwargs = {}
-                if param_str.strip():  # Check if there are any parameters
-                    for param in param_str.split(","):
-                        key_value = param.split("=")
-                        if len(key_value) == 2:  # Named parameter
-                            key, value = key_value
+
+                # Parse parameters only if exists
+                if param_str.strip():
+                    params = [p.strip() for p in param_str.split(",") if p.strip()]
+                    for p in params:
+                        if "=" in p:  # keyword argument
+                            key, value = p.split("=", 1)
                             kwargs[key.strip()] = eval(value.strip())
-                        else:  # Positional parameter
-                            args.append(eval(key_value[0].strip()))
-                # Dynamically call the method with positional and keyword arguments
-                getattr(controller, method_name)(*args, **kwargs)
+                        else:
+                            args.append(eval(p))
+
+                # Call the method dynamically
+                method = getattr(controller, method_name, None)
+                if not method:
+                    print(f"[Warning] Unknown controller method: {method_name}")
+                    continue
+
+                method(*args, **kwargs)
+
         except Exception as e:
             print(f"Error executing action '{action}': {e}")

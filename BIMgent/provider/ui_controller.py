@@ -3,7 +3,7 @@ import os
 import subprocess
 import pyautogui
 from conf.config import Config
-from BIMgent.utils.dict_utils import kget
+from bim_gui_agent.utils.dict_utils import kget
 import time
 config = Config()
 
@@ -121,7 +121,8 @@ class MouseController():
             # For single keys like "9"
             key = combo.strip()
             pyautogui.press(key)
-        time.sleep(1)
+            
+        time.sleep(3)
     
         
     def undo(self):
@@ -133,4 +134,12 @@ class MouseController():
         pyautogui.hotkey('ctrl', 'a')
         time.sleep(1)
         
-
+    def double_click(self):
+        #print("Performing a left-click at the current location...")
+        pyautogui.click(button='left')  
+        #print("Left-click completed.")
+        time.sleep(0.5)
+        #print("Performing a left-click at the current location...")
+        pyautogui.click(button='left')  
+        #print("Left-click completed.")
+        time.sleep(0.5)

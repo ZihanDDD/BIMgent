@@ -1,10 +1,10 @@
 import os
 import json
-import uuid
-from BIMgent.utils.singleton import Singleton
+from datetime import datetime
+from bim_gui_agent.utils.singleton import Singleton
 from dotenv import load_dotenv
-from BIMgent.utils.json_utils import load_json
-from BIMgent.utils.dict_utils import kget
+from bim_gui_agent.utils.json_utils import load_json
+from bim_gui_agent.utils.dict_utils import kget
 
 
 load_dotenv(verbose=True)
@@ -72,8 +72,14 @@ class Config(metaclass = Singleton):
         self.temperature = temperature or self.DEFAULT_FIXED_TEMPERATURE_VALUE
 
     def _set_dirs(self) -> None:
-        """Setup directories needed for one system run."""
-        unique_id = str(uuid.uuid4())
-        run_dir = os.path.join(os.getcwd(), 'runs', unique_id)
+        """Create the per-run working directory (named with a timestamp)."""
+        run_name = f"run_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        run_dir = os.path.join(os.getcwd(), 'runs', run_name)
+        os.makedirs(run_dir, exist_ok=True)
+        self.work_dir = run_dir
+
+    def set_run_dir(self, folder_name: str) -> None:
+        """Override the run directory with a custom name (e.g. batch evals)."""
+        run_dir = os.path.join(os.getcwd(), 'runs', folder_name)
         os.makedirs(run_dir, exist_ok=True)
         self.work_dir = run_dir

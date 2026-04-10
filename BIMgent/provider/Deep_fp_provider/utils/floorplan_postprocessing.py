@@ -661,13 +661,11 @@ def split_walls_by_intersection(walls_data, tol=1e-6):
         wall_str = f"{wall['id']}: ({wall['start'][0]:.1f}, {wall['start'][1]:.1f}) to ({wall['end'][0]:.1f}, {wall['end'][1]:.1f})"
         result.append(wall_str)
     return result
-
 def debug_visualize_step(walls, openings=None, save_dir=None):
     """
     Visualize a list of walls (and optionally openings) for debugging.
     
     Parameters:
-      step_name: A string title for the plot.
       walls: A list of wall strings.
       openings: (Optional) A list of [x, y] coordinates.
       save_dir: (Optional) Directory to save the image. Defaults to config.work_dir.
@@ -698,15 +696,11 @@ def debug_visualize_step(walls, openings=None, save_dir=None):
             plt.plot(op[0], op[1], 'ro', markersize=6)
     
     # Set plot properties
-    #plt.title(step_name)
     plt.axis('equal')
     plt.grid(False)
     plt.gca().invert_yaxis()  # Optional: Invert y-axis if needed
     
-    # Save the figure before showing it
-    output_name = "cleaned.png"
-    
-    # Use provided save_dir or default to config.work_dir
+    # Determine save directory
     if save_dir is None:
         try:
             save_dir = config.work_dir
@@ -716,14 +710,20 @@ def debug_visualize_step(walls, openings=None, save_dir=None):
     # Ensure the directory exists
     os.makedirs(save_dir, exist_ok=True)
     
-    image_path = os.path.join(config.work_dir, output_name)
-
+    # Save the figure BEFORE showing/pausing
+    output_name = "cleaned.png"
+    image_path = os.path.join(save_dir, output_name)
     plt.savefig(image_path, dpi=300, bbox_inches='tight')
+    
+    # Now display the plot temporarily
+    plt.show(block=False)  # Non-blocking display
+    plt.pause(3)
+    plt.close()
     
     print(f"The processed floorplan image is saved in {image_path}")
     
-    # Now display the plot (optional)
-    plt.show()
+    return image_path
+
     
     return image_path
 def clean_floor_plan_single(data):
@@ -787,6 +787,8 @@ def clean_floor_plan_single(data):
 
     
     image_path = debug_visualize_step(unique_final, adjusted_openings)
+
+    
     
     cleaned_data = {"walls": unique_final, "openings": adjusted_openings}
     return cleaned_data, image_path
@@ -813,6 +815,9 @@ def visualize_floor_plan_single(data, title="Floor Plan"):
     plt.grid(False)
     plt.axis('off')
     plt.show()
+
+    plt.pause(3)
+    plt.close()
     image_name = "cleanded_floorplan.png"
     image_path = os.path.join(config.work_dir, image_name)
     plt.savefig(image_path)
