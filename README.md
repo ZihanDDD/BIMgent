@@ -39,6 +39,7 @@ All interactions with Vectorworks happen through the `MouseController` (PyAutoGU
 ```
 BIMgent/
 ├── agent_runner.py                 # Entry point — prompts for floorplan + floors, then runs the pipeline
+├── check_setup.py                  # Pre-flight check: keys, model paths, panel coordinates, packages
 ├── .env.example                    # Template for API keys (copy to .env)
 ├── conf/
 │   ├── config.py                   # Global Config (singleton)
@@ -68,93 +69,159 @@ BIMgent/
 └── docs/                           # Figures and demo media
 ```
 
+## ⚡ Quick Start
+
+```bash
+git clone https://github.com/ZihanDDD/BIMgent_private_sourcecode.git BIMgent && cd BIMgent
+conda create -n bimgent python=3.10 -y && conda activate bimgent
+pip install -r requirements.txt
+
+cp .env.example .env                                                  # 1. add your API keys
+cp conf/env_config_vectorworks.example.json conf/env_config_vectorworks.json   # 2. set model paths + panel coordinates
+python check_setup.py                                                 # 3. verify everything before touching Vectorworks
+
+# Open Vectorworks 2025 with an empty document, then:
+python agent_runner.py --floorplanPath mini_building_benchmark/scaled_images/1floor/cubicasa1.png \
+                       --taskDescription "The building has 1 floor based on the provided layout."
+```
+
+`check_setup.py` validates the Python version, `.env` keys, model paths, panel coordinates, screen size and package imports, and prints exactly what still needs fixing. The detailed steps behind each line are below.
+
 ## 🔧 Setup
 
+**Requirements at a glance**
+
+| | |
+| --- | --- |
+| OS | Windows 10/11 (the agent drives the Vectorworks desktop GUI via PyAutoGUI; shortcuts and dialogs are Windows-specific) |
+| Display | 1920×1080, Windows display scaling **100%** — all click coordinates are absolute screen pixels |
+| Python | 3.10 |
+| GPU | Optional but recommended (CUDA). DeepFloorplan falls back to CPU automatically; OmniParser (YOLO + Florence-2) runs on CPU too but is several times slower per screenshot |
+| Accounts | Vectorworks 2025 license, Google Gemini API key, OpenAI API key |
+| Network | Needed at runtime for the LLM calls, and on the **first run** to download the Florence-2 processor and PaddleOCR models |
+
 ### 1. Install Vectorworks
-The current release targets the BIM authoring tool **Vectorworks 2025**. A valid license is required. Install it, then create your local environment config from the template and set `env_path` to the Vectorworks executable:
-```bash
-cp conf/env_config_vectorworks.example.json conf/env_config_vectorworks.json
-```
-`conf/env_config_vectorworks.json` is git-ignored because it holds machine-specific paths and is rewritten by `agent_runner.py` on every run.
+The current release targets **Vectorworks 2025**. Install it; the agent does not launch Vectorworks itself, so you will start it manually with an empty document before each run.
 
 ### 2. Python environment
-Create a Python **3.10** environment and install dependencies:
 ```bash
+conda create -n bimgent python=3.10 -y
+conda activate bimgent
 pip install -r requirements.txt
 ```
+The heavy dependencies are TensorFlow (DeepFloorplan), PyTorch + transformers + ultralytics (OmniParser) and PaddleOCR. If you want GPU inference, install a CUDA build of `torch`/`torchvision` for your driver first (see [pytorch.org](https://pytorch.org/get-started/locally/)), then run the `pip install` above.
 
 ### 3. API keys
-BIMgent uses Google Gemini for planning, vision and design interpretation, and OpenAI embeddings for the builder-documentation RAG. Copy the template and fill in your keys:
+BIMgent uses **Google Gemini** for planning, vision and floorplan interpretation, and **OpenAI embeddings** (`text-embedding-3-large`) to index the builder documentation for RAG. Copy the template and fill in both keys:
 ```bash
 cp .env.example .env
 ```
 ```env
 OA_OPENAI_KEY=your_openai_api_key
-GEMINI_API_KEY=your_gemini_api_key
+GEMINI_API_KEY=your_gemini_api_key      # GOOGLE_API_KEY is accepted as a fallback
 ```
-`.env` is git-ignored — never commit it.
+`.env` is git-ignored — never commit it. The Gemini model ids used for each stage are class attributes on [`LLMProvider`](BIMgent/provider/loop_providers/llm_provider.py) (`MODEL_PLANNING`, `MODEL_VISION`, `MODEL_UNDERSTANDING`); change them there if you want to swap models.
 
-### 4. Download external models
-BIMgent reuses two pretrained models. Download them and update the paths under `models_path` in `conf/env_config_vectorworks.json`.
+### 4. Environment config
+```bash
+cp conf/env_config_vectorworks.example.json conf/env_config_vectorworks.json
+```
+Edit `conf/env_config_vectorworks.json`:
 
-| Model | Purpose | Repository |
-| --- | --- | --- |
-| **DeepFloorplan** | Wall / opening segmentation from the input floorplan image | [zlzeng/DeepFloorplan](https://github.com/zlzeng/DeepFloorplan) |
-| **OmniParser** | Dynamic UI grounding of Vectorworks panels & dialogs (icon detector + Florence-2 captioner) | [microsoft/OmniParser](https://github.com/microsoft/OmniParser) |
+| Key | What to put there |
+| --- | --- |
+| `env_path` | Path to `Vectorworks2025.exe` (informational — the agent expects Vectorworks to be already running, see below) |
+| `models_path` | Paths to the downloaded weights (step 5) |
+| `panel_coordinates` | Screen rectangles of the Vectorworks panels (step 6) |
+| `task_description_list`, `floorplan_image_path` | Filled in automatically by `agent_runner.py` on every run — leave as is |
 
-Expected entries in the config:
+This file is git-ignored because it holds machine-specific paths and is rewritten on each run.
+
+### 5. Download external models
+BIMgent reuses two pretrained models. Download them and update `models_path` in the config.
+
+| Model | Purpose | Where to get it | Expected files |
+| --- | --- | --- | --- |
+| **DeepFloorplan** | Wall / opening segmentation of the input floorplan | [zlzeng/DeepFloorplan](https://github.com/zlzeng/DeepFloorplan) → pretrained checkpoint | a directory containing `pretrained_r3d.meta`, `pretrained_r3d.index`, `pretrained_r3d.data-*` |
+| **OmniParser icon detector** | YOLO model that finds clickable UI elements in Vectorworks screenshots | [microsoft/OmniParser-v2.0](https://huggingface.co/microsoft/OmniParser-v2.0) → `icon_detect/model.pt` | single `.pt` file |
+| **OmniParser Florence-2 captioner** | Describes each detected element so the LLM can pick the right one | [microsoft/OmniParser-v2.0](https://huggingface.co/microsoft/OmniParser-v2.0) → `icon_caption_florence/` | a directory with `config.json` + weights |
+
 ```json
 "models_path": {
-  "deep_floorplan": "<path>/deep_floorplan/pretrained",
-  "omini":          "<path>/omni/weights/icon_detect/model.pt",
-  "Florence2":      "<path>/omni/weights/icon_caption_florence"
+  "deep_floorplan": "D:/models/deep_floorplan/pretrained",
+  "omini":          "D:/models/omni/weights/icon_detect/model.pt",
+  "Florence2":      "D:/models/omni/weights/icon_caption_florence"
 }
 ```
+Two more models are fetched automatically on first use and cached by their libraries: the Florence-2 *processor* (`microsoft/Florence-2-base`, from the Hugging Face Hub) and the PaddleOCR English text models.
 
-### 5. Calibrate panel coordinates
-Vectorworks' panels must be mapped so the agent knows where to look and click. Update `panel_coordinates` in `conf/env_config_vectorworks.json` to match your screen layout:
+### 6. Calibrate panel coordinates
+The agent needs to know where the Vectorworks panels sit on screen. Open Vectorworks, arrange the workspace the way you will run it (the defaults in the example config assume a maximised window at 1920×1080 with the tool palette on the left and the Object Info palette on the right), then set `panel_coordinates`:
 
 ```json
 "panel_coordinates": {
-  "tool_panel":   [x1, y1, x2, y2],   // Left-hand tool list
-  "design_panel": [x1, y1, x2, y2],   // Central modeling canvas
-  "object_info":  [x1, y1, x2, y2],   // Right-hand object info panel
+  "tool_panel":   [x1, y1, x2, y2],   // Left-hand tool palette
+  "design_panel": [x1, y1, x2, y2],   // Central drawing area — the floorplan is scaled to fit inside this box
+  "object_info":  [x1, y1, x2, y2],   // Right-hand Object Info palette
   "whole_panel":  [0, 0, 1920, 1080]  // Full screen
 }
 ```
-Each rectangle is `[top-left x, top-left y, bottom-right x, bottom-right y]`. A quick way to read screen coordinates is to hover the mouse and run:
+Each rectangle is `[top-left x, top-left y, bottom-right x, bottom-right y]` in screen pixels. `design_panel` matters most: floorplan coordinates are mapped into it, so it must be the empty drawing canvas with no palettes overlapping. To read a coordinate, hover the mouse over the point and run:
 ```bash
 python -c "import pyautogui, time; time.sleep(3); print(pyautogui.position())"
 ```
 
+### 7. Verify
+```bash
+python check_setup.py
+```
+Fix every `[FAIL]` line it prints. `[WARN]` lines (no CUDA, screen size mismatch, Vectorworks path) are informational but worth reading.
+
 ## 🚀 Running the Agent
 
-Launch Vectorworks with an empty document, arrange the panels to match your `panel_coordinates`, then run:
+Always run from the repository root — prompts, builder docs and the RAG index (`chroma_db/`) are resolved relative to the working directory.
 
-```bash
-python agent_runner.py
-```
+1. Launch Vectorworks 2025 with an **empty document** and the workspace arranged as calibrated in step 6.
+2. Run the agent:
+   ```bash
+   python agent_runner.py
+   ```
+   You will be prompted for the path to a floorplan image (a real photo, a rendered floorplan, or a hand-drawn sketch) and the number of floors. Non-interactive:
+   ```bash
+   python agent_runner.py \
+     --envConfig ./conf/env_config_vectorworks.json \
+     --floorplanPath /path/to/floorplan.png \
+     --taskDescription "The building has 2 floors based on the provided layout."
+   ```
+3. **Keep your hands off the mouse and keyboard** once the builders start — the agent is driving the real desktop. To abort, press `Ctrl+C` in the terminal; the agent yields control between actions.
 
-You will be prompted for:
-1. **The path to a floorplan image** (a real photo, a rendered floorplan, or a hand-drawn sketch).
-2. **The number of floors** the building has.
+What happens during a run:
+1. **Floorplan understanding** — the image is resized to 512×512, segmented by DeepFloorplan, geometrically cleaned, and refined by the Gemini Design Interpreter. A few matplotlib windows pop up for ~3 s each so you can sanity-check the extracted walls and openings.
+2. **Hierarchical planning** — the high-level planner produces the step list; for each step the builder documentation is retrieved from `chroma_db/` (embedded automatically on the first run, takes a few seconds) and the low-level planner produces sub-steps.
+3. **Execution** — each sub-step is either replayed as precomputed actions or handled by the vision-driven builder (screenshot → OmniParser grounding → action generation → supervisor check, up to 3 attempts).
 
-Non-interactive usage:
-```bash
-python agent_runner.py \
-  --envConfig ./conf/env_config_vectorworks.json \
-  --floorplanPath /path/to/floorplan.png \
-  --taskDescription "The building has 2 floors based on the provided layout."
-```
+Every run writes to `runs/run_<timestamp>/`:
 
-During execution the agent will:
-1. Run DeepFloorplan + the Design Interpreter to produce floorplan metadata.
-2. Call the high-level planner, then the low-level planner (per step, with RAG guidance).
-3. Take control of mouse and keyboard to model the building in Vectorworks, with screenshot-based supervision and retries.
-
-**⚠️ Note:** Once the agent starts acting, keep your hands off the mouse and keyboard — the agent is driving the real desktop. Intermediate screenshots, planner outputs, and per-step logs are saved under the run's work directory (`memory.json`, `working_process_data.json`, and `screenshots/`).
+| File | Content |
+| --- | --- |
+| `resized_floorplan.png`, `segmented_floorplan.png`, `cleaned.png`, `postprocessed_floorplan_visualization.png` | Floorplan-understanding stages |
+| `openings/` | Crops of every detected opening sent to the door/window classifier |
+| `working_process_data.json` | Floorplan metadata, high-/low-level plans, per-sub-step actions, supervisor reasoning, screenshot paths and total runtime |
+| `memory.json` | Final shared working area |
+| `screenshots/` | Every screenshot taken, plus the masked / OmniParser-annotated variants |
 
 The main orchestration logic lives in [`BIMgent/runner/vectorworks_runner.py`](BIMgent/runner/vectorworks_runner.py).
+
+### Troubleshooting
+
+| Symptom | Likely cause |
+| --- | --- |
+| `No Gemini API key found` at startup | `.env` missing or key still a placeholder — run `check_setup.py` |
+| `Pretrained model not found in '...'` | `models_path.deep_floorplan` must point at the directory that contains `pretrained_r3d.*` |
+| `FileNotFoundError: res/vectorworks/prompts/...` | Not running from the repository root |
+| Clicks land in the wrong place | Display scaling is not 100%, or `panel_coordinates` no longer match the Vectorworks layout |
+| Long pause on the first vision-driven step | Florence-2 processor / PaddleOCR models being downloaded and loaded; subsequent steps are faster |
+| Supervisor keeps rejecting a step | Check the `_seg_*.png` screenshot in `screenshots/` — if OmniParser found no elements, the popup diff probably masked the wrong region |
 
 ## 📊 Mini Building Benchmark
 
