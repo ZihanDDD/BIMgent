@@ -1,4 +1,3 @@
-from BIMgent.provider.ui_controller import  MouseController
 import re
 from collections.abc import Iterable
 

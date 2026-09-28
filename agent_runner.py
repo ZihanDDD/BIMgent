@@ -99,9 +99,7 @@ def write_task_details(env_cfg_path: Path, desc: str, floorplan_path: Optional[s
 
 def main(args: argparse.Namespace) -> None:
     """Determine and run the environment‑specific *runner* module."""
-    runner_key = (
-        config.env_shared_runner.lower() if config.env_shared_runner else config.env_short_name.lower()
-    )
+    runner_key = config.env_short_name.lower()
     runner_module = importlib.import_module(f"BIMgent.runner.{runner_key}_runner")
     runner_module.entry(args)
 
@@ -147,15 +145,12 @@ if __name__ == "__main__":
     else:
         # Interactive prompt
         floorplan_path, task_desc = prompt_for_task_description()
-        if not task_desc:
-            task_desc = "Please create a building based on the provided floorplan"
 
     # Persist details to the JSON config
     write_task_details(env_cfg_path, task_desc, floorplan_path)
 
     # Load the updated configuration
     config.load_env_config(str(env_cfg_path))
-    config.set_fixed_seed()
 
     print(colored("\n✔  Configuration updated", "cyan"))
     print(colored(f"   Floorplan: {floorplan_path}", "cyan"))

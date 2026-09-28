@@ -1,5 +1,4 @@
 import os
-import atexit
 import time
 import json
 from datetime import datetime
@@ -9,17 +8,16 @@ from termcolor import colored
 from conf.config import Config
 from BIMgent.memory.local_memory import LocalMemory
 
-from BIMgent.provider.ui_controller import UIController, MouseController
+from BIMgent.provider.ui_controller import MouseController
 from BIMgent.provider.screenshots_processor import ScreenshotsProcessor
 from BIMgent.provider.loop_providers.design_interpreter import DesignInterpreterPostprocessingProvider, DesignInterpreterGeminiProvider
 from BIMgent.provider.loop_providers.project_manager import PMProvider, PMpostprocessing
-from BIMgent.provider.loop_providers.skill_generator_provider import VisionDrivenAgentsProvider, PureActionProvider
+from BIMgent.provider.loop_providers.skill_generator_provider import VisionDrivenAgentsProvider
 from BIMgent.provider.loop_providers.skill_executor import execute_actions
 from BIMgent.provider.Deep_fp_provider.deep_floorplan_provider import DeepFloorplanProvider
 from BIMgent.provider.omni_provider.omni_provider import OmniProvider
-from BIMgent.provider.builders_provider.builder_provider import query_builder, ingest_documents
+from BIMgent.provider.builders_provider.builder_provider import query_builder
 from BIMgent.utils.dict_utils import kget
-from BIMgent.utils.coordinate_trans import map_gui_to_ifc
 from BIMgent.utils.floorplan_resize import resize_image
 
 
@@ -38,10 +36,7 @@ class PipelineRunner():
 
         self.memory = LocalMemory()
 
-        # UI controller for the operation of the mouse and keyboard
-        self.ui_controller = UIController()
-
-        # controller for control the skill
+        # Mouse / keyboard controller used by execute_actions
         self.mouse_controller = MouseController()
 
         # Screenshots processor for processing of current state
@@ -63,7 +58,6 @@ class PipelineRunner():
 
         # Skill generator
         self.vision_driven_agents = VisionDrivenAgentsProvider(self.task_description)
-        self.pure_action_agents = PureActionProvider(self.task_description)
 
     def run(self):
         
@@ -198,9 +192,8 @@ class PipelineRunner():
             # ---------------------------------------------------------------------------------------------------------
             # +++++++++++++++ RAG documentation +++++++++++++++++++
             # ---------------------------------------------------------------------------------------------------------
-            ingest_documents()
-
-            # Query guidance for the full task description
+            # query_builder ingests the builder docs on first use (chroma_db/),
+            # so no explicit ingest is needed here.
             guidance = query_builder(current_step.get('description', ''))
 
             # ----- Low-level planning for this step -----
@@ -287,23 +280,10 @@ class PipelineRunner():
             json.dump(working_process_data, f, ensure_ascii=False, indent=4)
         print(colored(f"Total runtime: {runtime_minutes}m {runtime_remaining_secs:.1f}s", 'cyan'))
 
-        params = self.memory.working_area
-        print(type(params))
-        try:
-            memory = json.loads(params)
-        #Logs
-        except:
-            memory = params
-
-
         self.memory_path = os.path.join(config.work_dir, 'memory.json')
         with open(self.memory_path, 'w', encoding='utf-8') as f:
-            json.dump(memory, f, ensure_ascii=False, indent=4)
+            json.dump(self.memory.working_area, f, ensure_ascii=False, indent=4, default=str)
 
-
-        return
-    
-    
 #-----------------------------------------------------------------------
 # Functions
 #-----------------------------------------------------------------------
@@ -495,136 +475,40 @@ class PipelineRunner():
 
         
     def run_pure_action(self, current_sub_step, class_type, working_process_data, step_key, sub_step_key, initial_screenshot):
+        """Execute a pure-action sub-step (coordinates / keystrokes precomputed by
+        the low-level planner). These steps are not supervised: the actions are
+        run once, a screenshot is recorded, and the step is marked as success."""
 
-        # The generated actions from the previous steps
         original_actions = current_sub_step.get('actions')
         sub_task_name = current_sub_step.get('action_name')
-        coordinates = current_sub_step.get('coordinates')
-        max_attempts = 3
 
         print("\n")
         print(colored(f"🚀 Running current {class_type} Builder's task {sub_task_name}  🚀 ", "cyan"))
-        executed_actions = []
-        cot = []
-        screenshot_paths = []
+        print(colored(f'🏃‍♂️ Actions running for {sub_task_name}', 'green'))
 
-        for attempt in range(1, max_attempts + 1):
+        execute_actions(original_actions, self.mouse_controller)
+        time.sleep(0.5)
 
-            # ------------------------------------------------
-            # Execute actions
-            # ------------------------------------------------
-            if attempt > 1:
-                # Retry: escape/undo depending on failure type, then re-execute
-                print("\n")
-                print(colored(f'🏃‍♂️ Redoing the actions {sub_task_name} — attempt {attempt}/{max_attempts}', 'green'))
+        unique_code = str(uuid.uuid4().int)[:8]
+        screenshot_name = f"{sub_task_name}_attempt_1_{unique_code}.png"
+        attempt_screenshot = self.screenshots_processor.screenshot_capture(self.masked_dir, screenshot_name)
 
-            else:
-                print("\n")
-                print(colored(f'🏃‍♂️ Actions running for {sub_task_name}', 'green'))
-
-            execute_actions(original_actions, self.mouse_controller)
-            time.sleep(0.5)
-            executed_actions.append(original_actions)
-            print(executed_actions)
-
-            # ------------------------------------------------
-            # Take ONE screenshot per attempt — clearly named
-            # ------------------------------------------------
-            unique_code = str(uuid.uuid4().int)[:8]
-            screenshot_name = f"{sub_task_name}_attempt_{attempt}_{unique_code}.png"
-            attempt_screenshot = self.screenshots_processor.screenshot_capture(self.masked_dir, screenshot_name)
-            screenshot_paths.append(attempt_screenshot)
-
-            # ------------------------------------------------
-            # Supervisor checks the result
-            # ------------------------------------------------
-
-            # Layer / roof pure-actions (tab switching, option toggling, etc.)
-            # don't produce an on-canvas element the supervisor can verify, so
-            # we skip the oversight call and auto-pass them. Every other class
-            # goes through the full-screen supervisor.
-            # if class_type in ("layer", "roof"):
-            #     print("\n")
-            #     print(colored(
-            #         f'⏩ Auto-passing {class_type} pure-action: {sub_task_name}',
-            #         'yellow',
-            #     ))
-            #     approved_value = 'success'
-            # else:
-            #     length = None
-            #     mid_point = None
-            #     if isinstance(coordinates, list) and len(coordinates) == 2 and all(isinstance(pt, list) and len(pt) == 2 for pt in coordinates):
-            #         end_points, length, mid_point = map_gui_to_ifc(coordinates[0][0], coordinates[0][1], coordinates[1][0], coordinates[1][1])
-
-            #     print("\n")
-            #     print(colored(f'⏳ Checking the element... {sub_task_name}', 'yellow'))
-
-            #     approved_value = self.pure_action_agents.oversee(attempt_screenshot, class_type, length, mid_point)
-            approved_value = 'success'
-            # ------------------------------------------------
-            # Handle result
-            # ------------------------------------------------
-
-            if approved_value == 'success':
-                current_sub_step['actions'] = executed_actions
-                current_sub_step['approved_value'] = 'success'
-                current_sub_step['cot'] = cot
-                current_sub_step['screenshot_paths'] = screenshot_paths
-                current_sub_step['timestamp'] = datetime.now().isoformat()
-                working_process_data[step_key][sub_step_key] = current_sub_step
-                with open(self.working_process_path, 'w', encoding='utf-8') as f:
-                    json.dump(working_process_data, f, ensure_ascii=False, indent=4)
-                print("\n")
-                print(colored(f"✅ {sub_task_name} has been completed ✅", 'light_green'))
-                time.sleep(0.5)
-                return
-
-            # Failed — prepare for retry
-            if approved_value == 'creation_fail':
-                message = 'The currently step is not finished, the desired component is not been created.'
-                print("\n")
-                print(colored(f'Warning:⚠️ {message}', 'light_red'))
-                execute_actions(['press_escape()', 'press_escape()', 'press_escape()'], self.mouse_controller)
-                cot.append(message)
-
-            elif approved_value == 'coordinate_fail':
-                message = 'The currently step is correct, component been created but the coordinates are not correct.'
-                print("\n")
-                print(colored(f'Warning:⚠️ {message}', 'light_red'))
-                execute_actions(['press_escape()', 'undo()'], self.mouse_controller)
-                cot.append(message)
-
-        # -----------------------------------------------------------------------
-        # All attempts exhausted — mark as fail
-        # -----------------------------------------------------------------------
-        current_sub_step['approved_value'] = 'fail'
-        current_sub_step['actions'] = executed_actions
-        current_sub_step['cot'] = cot
-        current_sub_step['screenshot_paths'] = screenshot_paths
+        current_sub_step['actions'] = [original_actions]
+        current_sub_step['approved_value'] = 'success'
+        current_sub_step['cot'] = []
+        current_sub_step['screenshot_paths'] = [attempt_screenshot]
         current_sub_step['timestamp'] = datetime.now().isoformat()
         working_process_data[step_key][sub_step_key] = current_sub_step
         with open(self.working_process_path, 'w', encoding='utf-8') as f:
             json.dump(working_process_data, f, ensure_ascii=False, indent=4)
-        print("Fail, Jump to next task…\n")
-    
+        print("\n")
+        print(colored(f"✅ {sub_task_name} has been completed ✅", 'light_green'))
+        time.sleep(0.5)
+
     def run_floorplan_interpreter(self, walls, openings):
-
-        # Using gemini for explain: (better than openai)
         response = self.design_interpreter_gemini(walls, openings)
-        # Opneai version: 
-        #response = self.design_interpreter_openai(image_path, cleaned_image_path, walls, openings)
-
-        # Postprocessing map coordinates back.
+        # Postprocessing: map floorplan coordinates onto the design panel.
         self.design_interpreter_postprocessing(response)
-
-    def pipeline_shutdown(self):
-        print('>>> Bye.')
-
-
-def exit_cleanup(runner):
-    print("Cleaning up resources")
-    runner.pipeline_shutdown()
-
 
 
 def entry(args):
@@ -648,12 +532,7 @@ def entry(args):
         floorplan_path=floorplan_path,
     )
 
-    atexit.register(exit_cleanup, pipelineRunner)
-
     pipelineRunner.run()
 
     print(colored(f"\n  Pipeline completed.\n", 'green'))
-
-
-
 

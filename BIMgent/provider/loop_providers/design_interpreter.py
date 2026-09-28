@@ -3,7 +3,6 @@ import re
 import os
 import ast
 import json
-import time
 from conf.config import Config
 from PIL import Image
 from string import Template

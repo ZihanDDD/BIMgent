@@ -1,10 +1,10 @@
-import json
 import os
+import math
+
 import numpy as np
 import matplotlib.pyplot as plt
+
 from conf.config import Config
-from collections import defaultdict
-import math
 
 config = Config()
 
@@ -363,110 +363,7 @@ def remove_duplicates(walls_data, tol=1, coord_tol=5, dist_tol=5):
     result = [parsed_walls[i]["wall_str"] for i in range(n) if keep[i]]
     return result
 
-def connect_walls(walls_data, tolerance=3.0):
-    """Connect walls that should meet at corners by snapping endpoints together."""
-    parsed_walls = []
-    for wall_str in walls_data:
-        wall_id = get_wall_id(wall_str)
-        start, end = parse_coordinate_string(wall_str)
-        parsed_walls.append({
-            "id": wall_id,
-            "start": start,
-            "end": end
-        })
-    endpoints = []
-    for wall in parsed_walls:
-        endpoints.append(wall["start"])
-        endpoints.append(wall["end"])
-    connected_points = {}
-    processed = set()
-    for i, p1 in enumerate(endpoints):
-        if i in processed:
-            continue
-        cluster = [p1]
-        processed.add(i)
-        for j, p2 in enumerate(endpoints):
-            if j in processed:
-                continue
-            if is_close(p1, p2, tolerance):
-                cluster.append(p2)
-                processed.add(j)
-        if len(cluster) > 1:
-            avg_x = sum(p[0] for p in cluster) / len(cluster)
-            avg_y = sum(p[1] for p in cluster) / len(cluster)
-            avg_point = (avg_x, avg_y)
-            for p in cluster:
-                connected_points[p] = avg_point
-    updated_walls = []
-    for wall in parsed_walls:
-        new_start = connected_points.get(wall["start"], wall["start"])
-        new_end = connected_points.get(wall["end"], wall["end"])
-        updated_wall = f"{wall['id']}: ({new_start[0]:.1f}, {new_start[1]:.1f}) to ({new_end[0]:.1f}, {new_end[1]:.1f})"
-        updated_walls.append(updated_wall)
-    return updated_walls
 
-def find_super_close_walls(parsed_walls, proximity_threshold=3.0):
-    """Merge walls that are extremely close and should be combined (within the same room)."""
-    merged_walls = []
-    used_indices = set()
-    for i, wall1 in enumerate(parsed_walls):
-        if i in used_indices:
-            continue
-        start1, end1 = wall1["start"], wall1["end"]
-        merged_group = [wall1]
-        used_indices.add(i)
-        for j, wall2 in enumerate(parsed_walls):
-            if j in used_indices or i == j:
-                continue
-            start2, end2 = wall2["start"], wall2["end"]
-            is_wall1_horiz = is_horizontal(start1, end1)
-            is_wall1_vert = is_vertical(start1, end1)
-            is_wall2_horiz = is_horizontal(start2, end2)
-            is_wall2_vert = is_vertical(start2, end2)
-            if (is_wall1_horiz and is_wall2_horiz) or (is_wall1_vert and is_wall2_vert):
-                if is_wall1_horiz and abs(start1[1] - start2[1]) < proximity_threshold:
-                    x1_min = min(start1[0], end1[0])
-                    x1_max = max(start1[0], end1[0])
-                    x2_min = min(start2[0], end2[0])
-                    x2_max = max(start2[0], end2[0])
-                    if (x1_min <= x2_max + proximity_threshold and x2_min <= x1_max + proximity_threshold):
-                        merged_group.append(wall2)
-                        used_indices.add(j)
-                elif is_wall1_vert and abs(start1[0] - start2[0]) < proximity_threshold:
-                    y1_min = min(start1[1], end1[1])
-                    y1_max = max(start1[1], end1[1])
-                    y2_min = min(start2[1], end2[1])
-                    y2_max = max(start2[1], end2[1])
-                    if (y1_min <= y2_max + proximity_threshold and y2_min <= y1_max + proximity_threshold):
-                        merged_group.append(wall2)
-                        used_indices.add(j)
-        if len(merged_group) > 1:
-            if is_horizontal(merged_group[0]["start"], merged_group[0]["end"]):
-                y_coord = sum(w["start"][1] for w in merged_group) / len(merged_group)
-                x_min = min(min(w["start"][0], w["end"][0]) for w in merged_group)
-                x_max = max(max(w["start"][0], w["end"][0]) for w in merged_group)
-                merged_wall = {
-                    "id": merged_group[0]["id"],
-                    "start": (x_min, y_coord),
-                    "end": (x_max, y_coord)
-                }
-            else:
-                x_coord = sum(w["start"][0] for w in merged_group) / len(merged_group)
-                y_min = min(min(w["start"][1], w["end"][1]) for w in merged_group)
-                y_max = max(max(w["start"][1], w["end"][1]) for w in merged_group)
-                merged_wall = {
-                    "id": merged_group[0]["id"],
-                    "start": (x_coord, y_min),
-                    "end": (x_coord, y_max)
-                }
-            merged_walls.append(merged_wall)
-        else:
-            merged_walls.append(wall1)
-    result = []
-    for wall in merged_walls:
-        wall_str = f"{wall['id']}: ({wall['start'][0]:.1f}, {wall['start'][1]:.1f}) to ({wall['end'][0]:.1f}, {wall['end'][1]:.1f})"
-        result.append(wall_str)
-    return result
 def snap_wall_endpoints(cleaned_data, tolerance=10):
     """
     For each wall endpoint (both start and end) in the single floor plan,
@@ -673,9 +570,6 @@ def debug_visualize_step(walls, openings=None, save_dir=None):
     Returns:
       Path to the saved image.
     """
-    import matplotlib.pyplot as plt
-    import os
-    
     # Create figure
     plt.figure(figsize=(8, 8))
     
@@ -721,11 +615,10 @@ def debug_visualize_step(walls, openings=None, save_dir=None):
     plt.close()
     
     print(f"The processed floorplan image is saved in {image_path}")
-    
+
     return image_path
 
-    
-    return image_path
+
 def clean_floor_plan_single(data):
     """
     Process the single floor plan (with keys 'walls' and 'openings') and
@@ -737,33 +630,17 @@ def clean_floor_plan_single(data):
       4. Adjust opening positions by projecting them onto the nearest wall if within tolerance.
       5. Final split of walls by intersections and duplicate removal.
     """
-    # Step 1: Align, merge, connect, and remove duplicate walls.
+    # Step 1: Align, merge and remove duplicate walls.
     aligned = align_coordinates(data["walls"])
-
-    #debug_visualize_step("After Alignment", aligned)
-    
     merged = merge_collinear_walls(aligned)
-    #debug_visualize_step("After Merging", merged)
-
     unique = remove_duplicates(merged)
-    #debug_visualize_step("After Duplicate Removal", unique)
-    
-    # connected = connect_walls(unique, tolerance=20)
-    # debug_visualize_step("After Connecting", connected)
-    
-    # # Step 2: Snap wall endpoints.
+
+    # Step 2: Snap wall endpoints.
     snapped = snap_wall_endpoints({"walls": unique}, tolerance=20)["walls"]
-    #debug_visualize_step("After Snapping Endpoints", snapped)
 
-
-    # Step 3: Split walls by intersections.
+    # Step 3: Split walls by intersections, then remove duplicates again.
     split_walls = split_walls_by_intersection(snapped)
-    #debug_visualize_step("After Splitting Walls (Step 2)", split_walls)
-    
-    # # Step 5: Final split of walls by intersections, then remove duplicates.
-    # final_walls = split_walls_by_intersection(snapped)
     unique_final = remove_duplicates(split_walls)
-    #debug_visualize_step("After Splitting Walls (Step 2)", unique_final)
 
     # Step 4: Adjust opening positions.
     adjusted_openings = []
@@ -782,63 +659,8 @@ def clean_floor_plan_single(data):
             adjusted_openings.append([round(best_proj[0], 1), round(best_proj[1], 1)])
         else:
             adjusted_openings.append(list(op_pt))
-            
-    #debug_visualize_step("After Adjusting Openings", unique_final, adjusted_openings)
 
-    
     image_path = debug_visualize_step(unique_final, adjusted_openings)
 
-    
-    
     cleaned_data = {"walls": unique_final, "openings": adjusted_openings}
     return cleaned_data, image_path
-
-
-
-def visualize_floor_plan_single(data, title="Floor Plan"):
-    """Visualize the single floor plan with walls (labeled with their wall numbers) and openings."""
-    plt.figure(figsize=(10, 10))
-    # Plot walls as black lines with wall number labels.
-    for wall_str in data["walls"]:
-        start, end = parse_coordinate_string(wall_str)
-        plt.plot([start[0], end[0]], [start[1], end[1]], color='black', linewidth=2)
-        # Calculate midpoint for placing the label.
-        mid_x = (start[0] + end[0]) / 2.0
-        mid_y = (start[1] + end[1]) / 2.0
-        wall_label = get_wall_id(wall_str)
-        plt.text(mid_x, mid_y, wall_label, color='blue', fontsize=12, fontweight='bold',
-                 horizontalalignment='center', verticalalignment='center')
-    # Plot openings as red markers.
-    for op in data.get("openings", []):
-        plt.plot(op[0], op[1], 'o', color='red', markersize=7)
-    plt.title(title)
-    plt.grid(False)
-    plt.axis('off')
-    plt.show()
-
-    plt.pause(3)
-    plt.close()
-    image_name = "cleanded_floorplan.png"
-    image_path = os.path.join(config.work_dir, image_name)
-    plt.savefig(image_path)
-    print(f"The processed segmented floorplan image is saved in {image_path}")
-
-    
-    return image_path
-
-if __name__ == "__main__":
-    # Example input in the new format:
-    input_data = {'walls': ['Wall1: (388, 483) to (76, 483)', 'Wall2: (243, 482) to (243, 27)', 'Wall3: (134, 26) to (38, 26)', 'Wall4: (37, 318) to (37, 27)', 'Wall5: (242, 248) to (38, 248)', 'Wall6: (276, 26) to (188, 26)', 'Wall7: (388, 318) to (207, 318)', 'Wall8: (206, 482) to (206, 319)', 'Wall9: (78, 318) to (79, 261)', 'Wall10: (389, 171) to (389, 80)', 'Wall11: (338, 27) to (135, 27)', 'Wall12: (314, 317) to (314, 183)', 'Wall13: (389, 482) to (389, 319)', 'Wall14: (75, 482) to (75, 319)', 'Wall15: (472, 319) to (390, 319)', 'Wall16: (74, 319) to (38, 319)', 'Wall17: (473, 318) to (473, 172)', 'Wall18: (334, 182) to (245, 182)', 'Wall19: (472, 172) to (380, 172)', 'Wall20: (388, 77) to (339, 28)', 'Wall21: (244, 319) to (244, 282)', 'Wall22: (77, 318) to (79, 266)', 'Wall23: (79, 317) to (78, 249)'], 'openings': [[295, 27], [139, 27], [351, 39], [281, 182], [243, 218], [473, 228], [243, 278], [78, 282], [37, 286], [271, 318], [243, 380], [243, 398], [136, 483], [312, 483]]}
-
-    print("Cleaning floor plan data...")
-    cleaned = clean_floor_plan_single(input_data)
-    
-    # print("cleaned floor plan...")
-    # visualize_floor_plan_single(cleaned, "Cleaned Floor Plan")
-    
-    # Optionally, save the cleaned data
-    output_file = 'cleaned_floor_plan_data.json'
-    with open(output_file, 'w') as f:
-        json.dump(cleaned, f, indent=2)
-    
-    print(f"Cleaned floor plan data saved to '{output_file}'")

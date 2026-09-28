@@ -1,4 +1,3 @@
-easyocr
 google-genai
 imageio
 langchain_chroma
@@ -10,11 +9,11 @@ opencv-python
 openai
 paddleocr
 paddlepaddle
+openpyxl
 pandas
 Pillow
 pyautogui
 python-dotenv
-requests
 scikit-image
 scipy
 supervision

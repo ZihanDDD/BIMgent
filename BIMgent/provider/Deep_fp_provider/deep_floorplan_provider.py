@@ -109,7 +109,7 @@ class DeepFloorplanProvider:
             rgb_im[ind_im == i] = rgb
         return rgb_im
 
-    def process_image(self, im_path, save_output=True, output_dir=None):
+    def process_image(self, im_path, save_output=True):
         """
         Enhanced floorplan processing with noise reduction and geometric refinement.
         """
@@ -147,11 +147,7 @@ class DeepFloorplanProvider:
         # === 4. Save segmentation RGB ===
         floorplan_rgb = self.ind2rgb(floorplan)
         if save_output:
-            if output_dir is None:
-                output_dir = os.path.dirname(im_path)
-            os.makedirs(output_dir, exist_ok=True)
-            output_name = 'segmented_floorplan.png'
-            image_path = os.path.join(config.work_dir, output_name)
+            image_path = os.path.join(config.work_dir, 'segmented_floorplan.png')
             plt.imsave(image_path, floorplan_rgb)
             print(f"[Saved] Segmentation image: {image_path}")
 
@@ -680,13 +676,3 @@ class DeepFloorplanProvider:
         ]
         
         return min(distances)
-
-    @staticmethod
-    def distance(p, q):
-        """Compute Euclidean distance between two points."""
-        return np.sqrt((p[0] - q[0]) ** 2 + (p[1] - q[1]) ** 2)
-
-    @staticmethod
-    def to_int(point):
-        """Convert a coordinate point to integer values."""
-        return (int(round(point[0])), int(round(point[1])))

@@ -1,4 +1,3 @@
-import json
 import re
 
 def parse_wall_position(wall_str):

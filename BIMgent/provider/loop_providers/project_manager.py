@@ -1,11 +1,9 @@
 from copy import deepcopy
 import re
-from conf.config import Config
 from string import Template
 from BIMgent.memory.local_memory import LocalMemory
 from BIMgent.provider.loop_providers.llm_provider import LLMProvider
 
-config = Config()
 memory = LocalMemory()
 
 

@@ -49,9 +49,6 @@ class OmniProvider:
     def process_image(self, image_path, out_path=None):
         """Process an image and return a metadata string.
 
-        Interface matches ``omni_process_image(path, out_path)`` from the
-        endpoint module so callers can swap freely.
-
         Returns
         -------
         str or None
@@ -72,15 +69,11 @@ class OmniProvider:
 
         # Perform OCR
         start = time.time()
-        ocr_bbox_rslt, is_goal_filtered = check_ocr_box(
+        text, ocr_bbox = check_ocr_box(
             image_path,
-            display_img=False,
             output_bb_format='xyxy',
-            goal_filtering=None,
-            easyocr_args={'paragraph': False, 'text_threshold': 0.9},
-            use_paddleocr=True
+            text_threshold=0.9,
         )
-        text, ocr_bbox = ocr_bbox_rslt
         ocr_time = time.time() - start
         print(f"OCR completed in {ocr_time:.2f} seconds")
 
