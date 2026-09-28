@@ -153,11 +153,24 @@ def check_imports() -> None:
         report(OK, f"All {len(mods)} required packages import")
 
     try:
+        import transformers
+        major = int(transformers.__version__.split(".")[0])
+        if major >= 5:
+            report(FAIL, f"transformers {transformers.__version__} — Florence-2 remote code needs 4.x: "
+                         'pip install "transformers>=4.49,<5"')
+        else:
+            report(OK, f"transformers {transformers.__version__}")
+    except Exception:
+        pass
+
+    try:
         import torch
         if torch.cuda.is_available():
-            report(OK, f"CUDA available for OmniParser: {torch.cuda.get_device_name(0)}")
+            report(OK, f"CUDA available for OmniParser: {torch.cuda.get_device_name(0)} (torch {torch.__version__})")
         else:
-            report(WARN, "No CUDA device — OmniParser (YOLO + Florence-2) will run on CPU and be slow")
+            report(WARN, f"No CUDA device (torch {torch.__version__}) — OmniParser (YOLO + Florence-2) will run on CPU "
+                         "and be slow. For NVIDIA GPUs: pip uninstall torch torchvision && "
+                         "pip install torch torchvision --index-url https://download.pytorch.org/whl/cu128")
     except Exception:
         pass
 

@@ -1,4 +1,8 @@
 # Python 3.10 (TensorFlow 1.x-style graph loading for DeepFloorplan requires TF 2.x compat API)
+#
+# GPU: the default `torch` wheel on Windows is CPU-only. For CUDA install torch/torchvision
+# first from the PyTorch index, e.g.
+#   pip install torch torchvision --index-url https://download.pytorch.org/whl/cu128
 einops
 google-genai
 imageio
@@ -25,5 +29,8 @@ termcolor
 timm
 torch
 torchvision
-transformers
+# Florence-2 is loaded via Hugging Face remote code written for transformers 4.x;
+# transformers 5 removed generation attributes from PretrainedConfig and breaks it
+# (AttributeError: 'Florence2LanguageConfig' object has no attribute 'forced_bos_token_id').
+transformers>=4.49,<5
 ultralytics

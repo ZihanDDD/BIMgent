@@ -117,7 +117,15 @@ python -m pip install --upgrade pip
 pip install -r requirements.txt
 ```
 `.venv/` is git-ignored.
-The heavy dependencies are TensorFlow (DeepFloorplan), PyTorch + transformers + ultralytics (OmniParser) and PaddleOCR. If you want GPU inference, install a CUDA build of `torch`/`torchvision` for your driver first (see [pytorch.org](https://pytorch.org/get-started/locally/)), then run the `pip install` above.
+
+The heavy dependencies are TensorFlow (DeepFloorplan), PyTorch + transformers + ultralytics (OmniParser) and PaddleOCR. Two version notes:
+
+- **GPU**: the default `torch` wheel on Windows is CPU-only. For CUDA, install `torch`/`torchvision` from the PyTorch index **before** the `pip install -r` above, picking the CUDA tag that matches your driver (see [pytorch.org](https://pytorch.org/get-started/locally/)):
+  ```bash
+  pip install torch torchvision --index-url https://download.pytorch.org/whl/cu128
+  ```
+  If a CPU build is already installed, `pip uninstall torch torchvision` first — pip treats `2.x.0+cpu` and `2.x.0+cu128` as the same version and will not replace it. `check_setup.py` reports whether CUDA is visible.
+- **transformers must stay on 4.x** (pinned in `requirements.txt`). Florence-2 is loaded through Hugging Face remote code that transformers 5 no longer supports; with 5.x you get `AttributeError: 'Florence2LanguageConfig' object has no attribute 'forced_bos_token_id'` at start-up.
 
 ### 3. API keys
 BIMgent uses **Google Gemini** for planning, vision and floorplan interpretation, and **OpenAI embeddings** (`text-embedding-3-large`) to index the builder documentation for RAG. Copy the template and fill in both keys:
@@ -225,6 +233,8 @@ The main orchestration logic lives in [`BIMgent/runner/vectorworks_runner.py`](B
 | Symptom | Likely cause |
 | --- | --- |
 | `No Gemini API key found` at startup | `.env` missing or key still a placeholder — run `check_setup.py` |
+| `AttributeError: 'Florence2LanguageConfig' object has no attribute 'forced_bos_token_id'` | transformers 5.x installed — `pip install "transformers>=4.49,<5"` |
+| `SOM model loaded to cpu` although you have an NVIDIA GPU | CPU-only torch wheel — reinstall from the PyTorch CUDA index (step 2) |
 | `Pretrained model not found in '...'` | `models_path.deep_floorplan` must point at the directory that contains `pretrained_r3d.*` |
 | `FileNotFoundError: res/vectorworks/prompts/...` | Not running from the repository root |
 | Clicks land in the wrong place | Display scaling is not 100%, or `panel_coordinates` no longer match the Vectorworks layout |

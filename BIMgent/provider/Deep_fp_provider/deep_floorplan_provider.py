@@ -61,10 +61,10 @@ class DeepFloorplanProvider:
         """Initializes a TensorFlow session and loads the pretrained model."""
         if self.use_gpu:
             try:
-                print("Trying to use GPU for inference...")
                 self.sess = tf.compat.v1.Session()
                 self._load_model_from_dir()
-                print("Successfully used GPU for inference.")
+                device = "GPU" if tf.config.list_physical_devices('GPU') else "CPU"
+                print(f"DeepFloorplan model loaded (TensorFlow on {device}).")
             except Exception as e:
                 print(f"GPU inference failed with error: {e}")
                 print("Falling back to CPU...")
