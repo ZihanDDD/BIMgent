@@ -3,22 +3,22 @@
 🔗 **Website**: [https://tumcms.github.io/BIMgent.github.io/](https://tumcms.github.io/BIMgent.github.io/)
 📄 **Paper on arXiv**: [arXiv:2506.07217](https://arxiv.org/abs/2506.07217)
 
-![Workflow Diagram](docs/general_workflow1.png)
+![BIMgent overview](docs/overview.png)
 
 **BIMgent** is an agentic framework that lets Large Language Models autonomously perform architectural building modeling in a real BIM authoring tool. Instead of generating BIM files through custom APIs, BIMgent drives the *actual* GUI of [Vectorworks](https://www.vectorworks.net/) — it looks at the screen, plans like a human modeler, and acts through the mouse and keyboard. Given a floorplan image and the number of floors, the agent produces a complete 3D BIM model end-to-end.
 
-A detailed workflow diagram is available as a PDF: [docs/workflow2222.drawio.pdf](docs/workflow2222.drawio.pdf).
-
 ## 🎥 Demo
 
-**Generate a one-storey octagonal building from a hand-drawn sketch.**
+**From a floorplan image to a finished BIM model in Vectorworks, fully driven by the agent.**
 
-![Process GIF](docs/task6.gif)
+![BIMgent demo](docs/BIMgent_demo.gif)
 
 More demo videos are available on the project website:
 🔗 [https://tumcms.github.io/BIMgent.github.io/](https://tumcms.github.io/BIMgent.github.io/)
 
 ## 🧠 Framework Overview
+
+![BIMgent framework: floorplan understanding, hierarchical planning, action execution, generated models](docs/graphic_abstract.png)
 
 BIMgent implements the three-stage pipeline described in the paper:
 
@@ -32,7 +32,7 @@ BIMgent implements the three-stage pipeline described in the paper:
    - **Vision-Driven Agent** — for tasks that require on-screen reasoning. It takes a screenshot, uses **OmniParser** for dynamic UI grounding, generates mouse/keyboard actions, executes them, and lets a **supervisor** LLM verify the outcome with a retry loop.
    - **Pure-Action Agent** — for tasks where coordinates and keystrokes are precomputed from the floorplan metadata (e.g. drawing walls along known endpoints).
 
-All interactions with Vectorworks happen through the `UIController` / `MouseController` (PyAutoGUI-based) and a `ScreenshotsProcessor` that captures and crops the design panel, tool panel, and object-info panel.
+All interactions with Vectorworks happen through the `MouseController` (PyAutoGUI-based) and a `ScreenshotsProcessor` that captures full-screen screenshots and masks them down to the changed pop-up / design-panel region.
 
 ## 🗂️ Repository Structure
 

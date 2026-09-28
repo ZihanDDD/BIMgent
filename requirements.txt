@@ -1,3 +1,5 @@
+# Python 3.10 (TensorFlow 1.x-style graph loading for DeepFloorplan requires TF 2.x compat API)
+einops
 google-genai
 imageio
 langchain_chroma
@@ -5,11 +7,11 @@ langchain_community
 langchain_openai
 matplotlib
 numpy
-opencv-python
 openai
+opencv-python
+openpyxl
 paddleocr
 paddlepaddle
-openpyxl
 pandas
 Pillow
 pyautogui
@@ -20,6 +22,7 @@ supervision
 tabulate
 tensorflow
 termcolor
+timm
 torch
 torchvision
 transformers
