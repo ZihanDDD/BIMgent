@@ -73,7 +73,7 @@ BIMgent/
 
 ```bash
 git clone https://github.com/ZihanDDD/BIMgent_private_sourcecode.git BIMgent && cd BIMgent
-conda create -n bimgent python=3.10 -y && conda activate bimgent
+py -3.10 -m venv .venv && .venv\Scripts\activate      # Windows; on macOS/Linux: python3.10 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 
 cp .env.example .env                                                  # 1. add your API keys
@@ -105,10 +105,18 @@ The current release targets **Vectorworks 2025**. Install it; the agent does not
 
 ### 2. Python environment
 ```bash
-conda create -n bimgent python=3.10 -y
-conda activate bimgent
+# Windows (Python 3.10 must be installed; `py -0` lists available versions)
+py -3.10 -m venv .venv
+.venv\Scripts\activate
+
+# macOS / Linux
+python3.10 -m venv .venv
+source .venv/bin/activate
+
+python -m pip install --upgrade pip
 pip install -r requirements.txt
 ```
+`.venv/` is git-ignored.
 The heavy dependencies are TensorFlow (DeepFloorplan), PyTorch + transformers + ultralytics (OmniParser) and PaddleOCR. If you want GPU inference, install a CUDA build of `torch`/`torchvision` for your driver first (see [pytorch.org](https://pytorch.org/get-started/locally/)), then run the `pip install` above.
 
 ### 3. API keys
