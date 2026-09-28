@@ -102,7 +102,7 @@ def main(args: argparse.Namespace) -> None:
     runner_key = (
         config.env_shared_runner.lower() if config.env_shared_runner else config.env_short_name.lower()
     )
-    runner_module = importlib.import_module(f"bim_gui_agent.runner.{runner_key}_runner")
+    runner_module = importlib.import_module(f"BIMgent.runner.{runner_key}_runner")
     runner_module.entry(args)
 
 

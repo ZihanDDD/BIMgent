@@ -14,12 +14,12 @@ JITTER_RANGE = 1.0
 
 
 def _load_api_key() -> str:
-    for name in ("Gemini_KEY1", "GEMINI_API_KEY", "GOOGLE_API_KEY"):
+    for name in ("GEMINI_API_KEY", "GOOGLE_API_KEY"):
         v = os.getenv(name)
         if v:
             return v
     raise RuntimeError(
-        "No Gemini API key found. Set Gemini_KEY1 (or GEMINI_API_KEY / GOOGLE_API_KEY) in .env"
+        "No Gemini API key found. Set GEMINI_API_KEY (or GOOGLE_API_KEY) in .env"
     )
 
 

@@ -8,10 +8,10 @@ from conf.config import Config
 from PIL import Image
 from string import Template
 import matplotlib.pyplot as plt
-from bim_gui_agent.floorplan.floorplan_processer_llm import map_floorplan_to_new_bbox
-from bim_gui_agent.memory.local_memory import LocalMemory
-from bim_gui_agent.utils.dict_utils import kget
-from bim_gui_agent.provider.loop_providers.llm_provider import LLMProvider
+from BIMgent.floorplan.floorplan_processer_llm import map_floorplan_to_new_bbox
+from BIMgent.memory.local_memory import LocalMemory
+from BIMgent.utils.dict_utils import kget
+from BIMgent.provider.loop_providers.llm_provider import LLMProvider
 
 config = Config()
 memory = LocalMemory()

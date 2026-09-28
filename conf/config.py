@@ -1,10 +1,10 @@
 import os
 import json
 from datetime import datetime
-from bim_gui_agent.utils.singleton import Singleton
+from BIMgent.utils.singleton import Singleton
 from dotenv import load_dotenv
-from bim_gui_agent.utils.json_utils import load_json
-from bim_gui_agent.utils.dict_utils import kget
+from BIMgent.utils.json_utils import load_json
+from BIMgent.utils.dict_utils import kget
 
 
 load_dotenv(verbose=True)

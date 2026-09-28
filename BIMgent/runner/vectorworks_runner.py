@@ -7,20 +7,20 @@ import ast
 import uuid
 from termcolor import colored
 from conf.config import Config
-from bim_gui_agent.memory.local_memory import LocalMemory
+from BIMgent.memory.local_memory import LocalMemory
 
-from bim_gui_agent.provider.ui_controller import UIController, MouseController
-from bim_gui_agent.provider.screenshots_processor import ScreenshotsProcessor
-from bim_gui_agent.provider.loop_providers.design_interpreter import DesignInterpreterPostprocessingProvider, DesignInterpreterGeminiProvider
-from bim_gui_agent.provider.loop_providers.project_manager import PMProvider, PMpostprocessing
-from bim_gui_agent.provider.loop_providers.skill_generator_provider import VisionDrivenAgentsProvider, PureActionProvider
-from bim_gui_agent.provider.loop_providers.skill_executor import execute_actions
-from bim_gui_agent.provider.Deep_fp_provider.deep_floorplan_provider import DeepFloorplanProvider
-from bim_gui_agent.provider.omni_provider.omni_provider import OmniProvider
-from bim_gui_agent.provider.builders_provider.builder_provider import query_builder, ingest_documents
-from bim_gui_agent.utils.dict_utils import kget
-from bim_gui_agent.utils.coordinate_trans import map_gui_to_ifc
-from bim_gui_agent.utils.floorplan_resize import resize_image
+from BIMgent.provider.ui_controller import UIController, MouseController
+from BIMgent.provider.screenshots_processor import ScreenshotsProcessor
+from BIMgent.provider.loop_providers.design_interpreter import DesignInterpreterPostprocessingProvider, DesignInterpreterGeminiProvider
+from BIMgent.provider.loop_providers.project_manager import PMProvider, PMpostprocessing
+from BIMgent.provider.loop_providers.skill_generator_provider import VisionDrivenAgentsProvider, PureActionProvider
+from BIMgent.provider.loop_providers.skill_executor import execute_actions
+from BIMgent.provider.Deep_fp_provider.deep_floorplan_provider import DeepFloorplanProvider
+from BIMgent.provider.omni_provider.omni_provider import OmniProvider
+from BIMgent.provider.builders_provider.builder_provider import query_builder, ingest_documents
+from BIMgent.utils.dict_utils import kget
+from BIMgent.utils.coordinate_trans import map_gui_to_ifc
+from BIMgent.utils.floorplan_resize import resize_image
 
 
 config = Config()

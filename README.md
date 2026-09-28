@@ -7,7 +7,7 @@
 
 **BIMgent** is an agentic framework that lets Large Language Models autonomously perform architectural building modeling in a real BIM authoring tool. Instead of generating BIM files through custom APIs, BIMgent drives the *actual* GUI of [Vectorworks](https://www.vectorworks.net/) — it looks at the screen, plans like a human modeler, and acts through the mouse and keyboard. Given a floorplan image and the number of floors, the agent produces a complete 3D BIM model end-to-end.
 
-![Workflow Diagram](docs/workflow2222.drawio.pdf)
+A detailed workflow diagram is available as a PDF: [docs/workflow2222.drawio.pdf](docs/workflow2222.drawio.pdf).
 
 ## 🎥 Demo
 
@@ -39,27 +39,28 @@ All interactions with Vectorworks happen through the `UIController` / `MouseCont
 ```
 BIMgent/
 ├── agent_runner.py                 # Entry point — prompts for floorplan + floors, then runs the pipeline
+├── .env.example                    # Template for API keys (copy to .env)
 ├── conf/
 │   ├── config.py                   # Global Config (singleton)
-│   └── env_config_vectorworks.json # Environment config: paths, panel coordinates, model paths
+│   └── env_config_vectorworks.example.json # Template env config (copy to env_config_vectorworks.json)
 ├── BIMgent/                        # Core package
 │   ├── runner/
 │   │   └── vectorworks_runner.py   # Main pipeline orchestration
 │   ├── provider/
 │   │   ├── ui_controller.py        # Mouse / keyboard control
-│   │   ├── screenshots_processor.py# Screenshot capture + panel cropping
-│   │   ├── Deep_fp_provider/       # DeepFloorplan wall/opening segmentation
+│   │   ├── screenshots_processor.py# Screenshot capture + popup / panel masking
+│   │   ├── Deep_fp_provider/       # DeepFloorplan wall/opening segmentation + geometric post-processing
 │   │   ├── omni_provider/          # OmniParser UI element grounding
 │   │   ├── builders_provider/      # RAG over builder documentation
 │   │   └── loop_providers/
 │   │       ├── design_interpreter.py     # Gemini-based floorplan interpreter
 │   │       ├── project_manager.py        # High-level + low-level planners
-│   │       ├── skill_generator_provider.py # Vision-driven + pure-action builders
+│   │       ├── skill_generator_provider.py # Vision-driven builder (action generator + supervisor)
 │   │       ├── skill_executor.py         # Executes generated actions
-│   │       └── llm_provider.py
+│   │       └── llm_provider.py           # Single entry point for all Gemini calls
 │   ├── memory/                     # Working-area memory shared across stages
-│   ├── floorplan/                  # Floorplan post-processing helpers
-│   └── utils/                      # Coordinate transforms, resizing, JSON helpers
+│   ├── floorplan/                  # Maps floorplan coordinates onto the Vectorworks design panel
+│   └── utils/                      # Config helpers, image resizing, Gemini retry wrapper
 ├── res/vectorworks/
 │   ├── prompts/                    # Prompt templates for every LLM stage
 │   └── builders/                   # Markdown docs retrieved via RAG (wall, door, window, slab, roof, stair, layer)
@@ -70,7 +71,11 @@ BIMgent/
 ## 🔧 Setup
 
 ### 1. Install Vectorworks
-The current release targets the BIM authoring tool **Vectorworks 2025**. A valid license is required. Install it before running the agent and make sure the executable path in `conf/env_config_vectorworks.json` (`env_path`) is correct.
+The current release targets the BIM authoring tool **Vectorworks 2025**. A valid license is required. Install it, then create your local environment config from the template and set `env_path` to the Vectorworks executable:
+```bash
+cp conf/env_config_vectorworks.example.json conf/env_config_vectorworks.json
+```
+`conf/env_config_vectorworks.json` is git-ignored because it holds machine-specific paths and is rewritten by `agent_runner.py` on every run.
 
 ### 2. Python environment
 Create a Python **3.10** environment and install dependencies:
@@ -79,11 +84,15 @@ pip install -r requirements.txt
 ```
 
 ### 3. API keys
-BIMgent uses both OpenAI and Google Gemini models (planning, vision, design interpretation). Create a `.env` file at the repository root:
-```env
-OA_OPENAI_KEY="your_openai_api_key"
-Gemini_KEY="your_gemini_api_key"
+BIMgent uses Google Gemini for planning, vision and design interpretation, and OpenAI embeddings for the builder-documentation RAG. Copy the template and fill in your keys:
+```bash
+cp .env.example .env
 ```
+```env
+OA_OPENAI_KEY=your_openai_api_key
+GEMINI_API_KEY=your_gemini_api_key
+```
+`.env` is git-ignored — never commit it.
 
 ### 4. Download external models
 BIMgent reuses two pretrained models. Download them and update the paths under `models_path` in `conf/env_config_vectorworks.json`.
@@ -113,9 +122,9 @@ Vectorworks' panels must be mapped so the agent knows where to look and click. U
   "whole_panel":  [0, 0, 1920, 1080]  // Full screen
 }
 ```
-Each rectangle is `[top-left x, top-left y, bottom-right x, bottom-right y]`. Coordinates can be read off interactively with:
+Each rectangle is `[top-left x, top-left y, bottom-right x, bottom-right y]`. A quick way to read screen coordinates is to hover the mouse and run:
 ```bash
-python mouse_detector.py
+python -c "import pyautogui, time; time.sleep(3); print(pyautogui.position())"
 ```
 
 ## 🚀 Running the Agent
@@ -152,7 +161,13 @@ The main orchestration logic lives in [`BIMgent/runner/vectorworks_runner.py`](B
 The `mini_building_benchmark/` folder contains the small-scale benchmark used in the paper for evaluating floorplan understanding and end-to-end modeling:
 - `ori_images/` and `scaled_images/` — source and resized floorplans,
 - `GT/` — ground-truth annotations,
-- `eva_matric.py` — computes the evaluation metrics reported in the paper.
+- `run_floorplan_understanding.py` — runs DeepFloorplan + the Design Interpreter over all 45 cases and writes predictions to `floorplan_understanding/`,
+- `eva_matric.py` — compares those predictions against `GT/` and writes `evaluation_results.xlsx` (requires `openpyxl`).
+
+```bash
+python mini_building_benchmark/run_floorplan_understanding.py
+python mini_building_benchmark/eva_matric.py
+```
 
 ## 📎 Appendices: All 45 Evaluation Cases
 

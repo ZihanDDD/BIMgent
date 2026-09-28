@@ -8,9 +8,9 @@ from typing import (
 import os
 
 from conf.config import Config
-from bim_gui_agent.memory.base import BaseMemory, Image
-from bim_gui_agent.utils.json_utils import load_json, save_json
-from bim_gui_agent.utils.singleton import Singleton
+from BIMgent.memory.base import BaseMemory, Image
+from BIMgent.utils.json_utils import load_json, save_json
+from BIMgent.utils.singleton import Singleton
 
 config = Config()
 

@@ -3,12 +3,12 @@ Batch floorplan understanding evaluation.
 
 Processes all 45 floorplans (1floor/2floor/3floor × cubicasa1-15):
   1. Resize image to 512×512
-  2. Run DeepFloorplan segmentation (server at localhost:8888)
+  2. Run DeepFloorplan segmentation (local TF inference)
   3. Run Gemini design interpreter for wall/opening refinement + classification
   4. Save results (JSON + images) to mini_building_benchmark/floorplan_understanding/
 
 Prerequisites:
-  - DeepFloorplan server running at localhost:8888
+  - models_path.deep_floorplan set in conf/env_config_vectorworks.json
   - GEMINI_API_KEY (or GOOGLE_API_KEY) set in .env
 
 Usage:
@@ -37,10 +37,14 @@ PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 sys.path.insert(0, PROJECT_ROOT)
 
 from conf.config import Config
-from bim_gui_agent.memory.local_memory import LocalMemory
-from bim_gui_agent.utils.floorplan_resize import resize_image
-from bim_gui_agent.provider.Deep_fp_provider.deepfloorplan_endpoint import run_deepfloorplan
-from bim_gui_agent.provider.loop_providers.design_interpreter import (
+
+config = Config()
+config.load_env_config(os.path.join(PROJECT_ROOT, "conf", "env_config_vectorworks.json"))
+
+from BIMgent.memory.local_memory import LocalMemory
+from BIMgent.utils.floorplan_resize import resize_image
+from BIMgent.provider.Deep_fp_provider.deep_floorplan_provider import DeepFloorplanProvider
+from BIMgent.provider.loop_providers.design_interpreter import (
     DesignInterpreterGeminiProvider,
 )
 
@@ -62,10 +66,9 @@ def is_already_done(out_dir: str) -> bool:
     return os.path.isfile(os.path.join(out_dir, "working_process_data.json"))
 
 
-def process_single_floorplan(floor: str, case_name: str):
+def process_single_floorplan(floor: str, case_name: str, deep_floorplan: DeepFloorplanProvider):
     """Run the full floorplan understanding pipeline for one image."""
 
-    config = Config()
     memory = LocalMemory()
 
     image_path = os.path.join(ORI_IMAGES_DIR, floor, f"{case_name}.png")
@@ -80,15 +83,16 @@ def process_single_floorplan(floor: str, case_name: str):
     # --- Reset singleton state for this run ---
     config.work_dir = out_dir
     memory.clear()
-    memory.memory_path = out_dir
 
     # 1. Resize image to 512×512
     memory.update_info_history({"floorplan_path": image_path})
     resize_path = resize_image(image_path)
     memory.update_info_history({"floorplan_path": resize_path})
 
-    # 2. Deep Floorplan segmentation (calls server at localhost:8888)
-    walls, openings = run_deepfloorplan()
+    # 2. Deep Floorplan segmentation (local inference, same as the main pipeline)
+    walls, openings = deep_floorplan.process_image(resize_path)
+    walls = json.dumps(walls, ensure_ascii=False)
+    openings = json.dumps(openings, ensure_ascii=False)
 
     # 3. Design interpreter (Gemini 3.1 Pro) — refine walls + classify openings
     interpreter = DesignInterpreterGeminiProvider(task_description="floorplan evaluation")
@@ -126,6 +130,9 @@ def main():
 
     os.makedirs(OUTPUT_ROOT, exist_ok=True)
 
+    # Load the TF model once and reuse it across all cases
+    deep_floorplan = DeepFloorplanProvider()
+
     total = 0
     success = 0
     skipped = 0
@@ -149,7 +156,7 @@ def main():
             print(f"{'='*60}")
 
             try:
-                ok = process_single_floorplan(floor, case_name)
+                ok = process_single_floorplan(floor, case_name, deep_floorplan)
                 if ok:
                     success += 1
                 else:

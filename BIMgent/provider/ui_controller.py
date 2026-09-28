@@ -3,7 +3,7 @@ import os
 import subprocess
 import pyautogui
 from conf.config import Config
-from bim_gui_agent.utils.dict_utils import kget
+from BIMgent.utils.dict_utils import kget
 import time
 config = Config()
 

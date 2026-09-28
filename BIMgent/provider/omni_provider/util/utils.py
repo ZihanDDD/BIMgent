@@ -40,7 +40,7 @@ import re
 from torchvision.transforms import ToPILImage
 import supervision as sv
 import torchvision.transforms as T
-from bim_gui_agent.provider.omni_provider.util.box_annotator import BoxAnnotator 
+from BIMgent.provider.omni_provider.util.box_annotator import BoxAnnotator 
 
 
 def get_caption_model_processor(model_name, model_name_or_path="Salesforce/blip2-opt-2.7b", device=None):

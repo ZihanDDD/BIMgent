@@ -1,22 +1,39 @@
+# Secrets / local config
+.env
+conf/env_config_vectorworks.json
+
+# Run artefacts
+runs/
+chroma_db/
+mini_building_benchmark/floorplan_understanding/
+mini_building_benchmark/evaluation_results.xlsx
+cleaned_floor_plan_data.json
+
+# Python
 venv/
 .venv/
 env/
 ENV/
 bim_agent_env/
-
 __pycache__/
 *.py[cod]
 *$py.class
+.ipynb_checkpoints/
+Pipfile.lock
+poetry.lock
 
+# Editors / OS
 .vscode/
 .idea/
+.DS_Store
+Thumbs.db
 
-.ipynb_checkpoints/
-
+# Misc
 *.log
 *.tmp
 *.bak
 
+# Model weights (downloaded separately)
 *.h5
 *.hdf5
 *.ckpt
@@ -24,10 +41,3 @@ __pycache__/
 *.pt
 *.pb
 *.onnx
-
-.DS_Store
-Thumbs.db
-
-Pipfile.lock
-poetry.lock
-

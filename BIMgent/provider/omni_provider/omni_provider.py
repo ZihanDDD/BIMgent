@@ -5,8 +5,8 @@ import torch
 import pandas as pd
 from PIL import Image
 from conf.config import Config
-from bim_gui_agent.utils.dict_utils import kget
-from bim_gui_agent.provider.omni_provider.util.utils import (
+from BIMgent.utils.dict_utils import kget
+from BIMgent.provider.omni_provider.util.utils import (
     get_som_labeled_img,
     check_ocr_box,
     get_caption_model_processor,

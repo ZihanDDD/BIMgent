@@ -6,7 +6,7 @@ downstream consumers pick up the change automatically.
 
 Example
 -------
->>> from bim_gui_agent.provider.loop_providers.llm_provider import LLMProvider
+>>> from BIMgent.provider.loop_providers.llm_provider import LLMProvider
 >>> llm = LLMProvider()
 >>> # text-only call
 >>> text = llm.call(LLMProvider.MODEL_PLANNING, [prompt], top_p=0.95)
@@ -17,7 +17,7 @@ Example
 
 import os
 from google.genai import types
-from bim_gui_agent.utils.gemini_utils import gemini_call_with_retry, get_gemini_key_manager
+from BIMgent.utils.gemini_utils import gemini_call_with_retry, get_gemini_key_manager
 
 
 class LLMProvider:

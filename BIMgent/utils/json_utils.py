@@ -3,7 +3,7 @@ import re
 from typing import Optional, Tuple, Dict
 from collections import OrderedDict
 from collections.abc import Mapping, Iterable
-from bim_gui_agent.utils.string_utils import contains_punctuation, is_numbered_bullet_list_item
+from BIMgent.utils.string_utils import contains_punctuation, is_numbered_bullet_list_item
 
 from datetime import datetime
 import torch

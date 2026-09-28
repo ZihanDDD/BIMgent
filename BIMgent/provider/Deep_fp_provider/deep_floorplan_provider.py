@@ -12,9 +12,9 @@ from PIL import Image
 from skimage.measure import label, regionprops
 import cv2
 from conf.config import Config
-from bim_gui_agent.memory.local_memory import LocalMemory
-from bim_gui_agent.provider.Deep_fp_provider.utils.floorplan_postprocessing import clean_floor_plan_single
-from bim_gui_agent.utils.dict_utils import kget
+from BIMgent.memory.local_memory import LocalMemory
+from BIMgent.provider.Deep_fp_provider.utils.floorplan_postprocessing import clean_floor_plan_single
+from BIMgent.utils.dict_utils import kget
 
 # Disable eager execution for TF1.x compatibility (and silence its deprecation notice)
 tf.get_logger().setLevel(logging.ERROR)

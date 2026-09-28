@@ -1,4 +1,4 @@
-from bim_gui_agent.provider.ui_controller import  MouseController
+from BIMgent.provider.ui_controller import  MouseController
 import re
 from collections.abc import Iterable
 

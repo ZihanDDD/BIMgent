@@ -2,7 +2,7 @@
   "env_name": "Vectorworks 2025",
   "sub_path": "vectorworks",
   "env_short_name": "vectorworks",
-  "env_path": "D:/SoftwareLibrary/vectorworks2025/Vectorworks2025.exe",
+  "env_path": "C:/Program Files/Vectorworks 2025/Vectorworks2025.exe",
   "task_description_list": [
     {
       "id": 1,
@@ -11,12 +11,12 @@
     }
   ],
   "floorplan_image_path": {
-    "floorplan": "C:\\Users\\ge84biv\\2_Projects\\BIMgent\\1_code\\BIM_GUI_agent\\mini_building_benchmark\\scaled_images\\1floor\\cubicasa1.png"
+    "floorplan": "mini_building_benchmark/scaled_images/1floor/cubicasa1.png"
   },
   "models_path": {
-    "deep_floorplan": "C:/Users/ge84biv/2_Projects/BIMgent/2_doc/models/models/deep_floorplan/pretrained",
-    "omini": "C:/Users/ge84biv/2_Projects/BIMgent/2_doc/models/models/omni/weights/icon_detect/model.pt",
-    "Florence2": "C:/Users/ge84biv/2_Projects/BIMgent/2_doc/models/models/omni/weights/icon_caption_florence"
+    "deep_floorplan": "<path>/deep_floorplan/pretrained",
+    "omini": "<path>/omni/weights/icon_detect/model.pt",
+    "Florence2": "<path>/omni/weights/icon_caption_florence"
   },
   "panel_coordinates": {
     "design_panel": [

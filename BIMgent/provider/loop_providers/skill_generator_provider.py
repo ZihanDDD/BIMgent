@@ -2,8 +2,8 @@ from copy import deepcopy
 import re
 from string import Template
 from conf.config import Config
-from bim_gui_agent.memory.local_memory import LocalMemory
-from bim_gui_agent.provider.loop_providers.llm_provider import LLMProvider
+from BIMgent.memory.local_memory import LocalMemory
+from BIMgent.provider.loop_providers.llm_provider import LLMProvider
 
 config = Config()
 memory = LocalMemory()
