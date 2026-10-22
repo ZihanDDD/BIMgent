@@ -331,7 +331,7 @@ If you use this work, please cite the journal paper. The earlier workshop versio
 
 ```bibtex
 @article{deng2027bimgent,
-  title   = {BIMgent: Generating Building Information Models via Computer-use Agents},
+  title   = {Generating Building Information Models via computer-use agents},
   author  = {Zihan Deng and Changyu Du and Stavros Nousias and André Borrmann},
   journal = {Automation in Construction},
   volume  = {193},
